@@ -1,0 +1,410 @@
+[
+  {
+    "sql": "SELECT a FROM T; SELECT b FROM U",
+    "label": "multiple statements"
+  },
+  {
+    "sql": "SELECT a FROM T;",
+    "label": "trailing semicolon"
+  },
+  {
+    "sql": "SELECT a FROM T; DROP TABLE T",
+    "label": "stacked drop"
+  },
+  {
+    "sql": "SELECT a FROM T WHERE b = 1; DELETE FROM T",
+    "label": "stacked delete"
+  },
+  {
+    "sql": "SELECT a; FROM T",
+    "label": "semicolon mid-text"
+  },
+  {
+    "sql": "SELECT * FROM T",
+    "label": "select star"
+  },
+  {
+    "sql": "SELECT t.* FROM T t",
+    "label": "qualified star"
+  },
+  {
+    "sql": "SELECT COUNT(*) AS n, * FROM T",
+    "label": "star mixed"
+  },
+  {
+    "sql": "SELECT a FROM T WHERE a IN (SELECT * FROM U)",
+    "label": "star in subquery"
+  },
+  {
+    "sql": "SELECT a FROM T LIMIT 10",
+    "label": "limit"
+  },
+  {
+    "sql": "SELECT a FROM T LIMIT 10 OFFSET 5",
+    "label": "limit offset"
+  },
+  {
+    "sql": "SELECT a FROM T OFFSET 5",
+    "label": "offset"
+  },
+  {
+    "sql": "SELECT TOP 10 a FROM T",
+    "label": "top"
+  },
+  {
+    "sql": "SELECT a FROM T WHERE b IN (SELECT b FROM U LIMIT 1)",
+    "label": "limit in subquery"
+  },
+  {
+    "sql": "SELECT a FROM T FETCH FIRST 5 ROWS ONLY",
+    "label": "fetch first"
+  },
+  {
+    "sql": "WITH x AS (SELECT a FROM T) SELECT a FROM x",
+    "label": "cte"
+  },
+  {
+    "sql": "SELECT a FROM T UNION SELECT a FROM U",
+    "label": "union"
+  },
+  {
+    "sql": "SELECT a FROM T UNION ALL SELECT a FROM U",
+    "label": "union all"
+  },
+  {
+    "sql": "SELECT a FROM T INTERSECT SELECT a FROM U",
+    "label": "intersect"
+  },
+  {
+    "sql": "SELECT a FROM T EXCEPT SELECT a FROM U",
+    "label": "except"
+  },
+  {
+    "sql": "SELECT a FROM (SELECT a FROM T UNION SELECT a FROM U) x",
+    "label": "union in from subquery"
+  },
+  {
+    "sql": "SELECT SUM(a) OVER (PARTITION BY b) FROM T",
+    "label": "window sum"
+  },
+  {
+    "sql": "SELECT ROW_NUMBER() OVER (ORDER BY a) FROM T",
+    "label": "row_number"
+  },
+  {
+    "sql": "SELECT RANK() OVER (PARTITION BY b ORDER BY a DESC) AS r FROM T",
+    "label": "rank"
+  },
+  {
+    "sql": "SELECT a FROM T WINDOW w AS (PARTITION BY b)",
+    "label": "named window"
+  },
+  {
+    "sql": "SELECT a FROM T -- comment",
+    "label": "line comment"
+  },
+  {
+    "sql": "SELECT a /* c */ FROM T",
+    "label": "block comment"
+  },
+  {
+    "sql": "SELECT a FROM T WHERE b = 1 --' OR 1=1",
+    "label": "comment hidden payload"
+  },
+  {
+    "sql": "SELECT a FROM T /*! DROP TABLE T */",
+    "label": "mysql style comment"
+  },
+  {
+    "sql": "SELECT a FROM T WHERE b = 1 /* ; DELETE FROM T */",
+    "label": "comment hiding statement"
+  },
+  {
+    "sql": "SELECT a INTO X FROM T",
+    "label": "select into"
+  },
+  {
+    "sql": "SELECT a FROM T FOR UPDATE",
+    "label": "for update"
+  },
+  {
+    "sql": "SELECT a FROM T FOR SHARE",
+    "label": "for share"
+  },
+  {
+    "sql": "SELECT a FROM MYSCHEMA.T",
+    "label": "schema qualified"
+  },
+  {
+    "sql": "SELECT a FROM \"MYSCHEMA\".\"T\"",
+    "label": "quoted schema qualified"
+  },
+  {
+    "sql": "SELECT t.a FROM T t JOIN OTHER.U u ON u.a = t.a",
+    "label": "schema in join"
+  },
+  {
+    "sql": "SELECT a FROM SYS.TABLES",
+    "label": "sys tables"
+  },
+  {
+    "sql": "SELECT a FROM _SYS_BI.BIMC_ALL_CUBES",
+    "label": "_SYS_ schema"
+  },
+  {
+    "sql": "SELECT a FROM SYS_DATABASES.M_SERVICES",
+    "label": "sys_databases"
+  },
+  {
+    "sql": "SELECT a FROM T WHERE b IN (SELECT b FROM SYS.USERS)",
+    "label": "sys in subquery"
+  },
+  {
+    "sql": "SELECT a FROM \"SYS\".\"USERS\"",
+    "label": "quoted sys"
+  },
+  {
+    "sql": "SELECT a FROM T CROSS JOIN U",
+    "label": "cross join"
+  },
+  {
+    "sql": "SELECT a FROM T, U",
+    "label": "implicit cross join"
+  },
+  {
+    "sql": "SELECT a FROM T1 JOIN T2 ON T1.i=T2.i JOIN T3 ON T2.i=T3.i JOIN T4 ON T3.i=T4.i JOIN T5 ON T4.i=T5.i",
+    "label": "five tables"
+  },
+  {
+    "sql": "SELECT a FROM T FULL JOIN U ON T.i = U.i",
+    "label": "full join"
+  },
+  {
+    "sql": "SELECT a FROM T RIGHT JOIN U ON T.i = U.i",
+    "label": "right join"
+  },
+  {
+    "sql": "SELECT a FROM T JOIN U USING (i)",
+    "label": "join using"
+  },
+  {
+    "sql": "SELECT a FROM T NATURAL JOIN U",
+    "label": "natural join"
+  },
+  {
+    "sql": "SELECT a FROM (SELECT a FROM (SELECT a FROM (SELECT a FROM T) x) y) z",
+    "label": "three subquery levels"
+  },
+  {
+    "sql": "SELECT a FROM T WHERE a IN (SELECT a FROM U WHERE a IN (SELECT a FROM V WHERE a IN (SELECT a FROM W)))",
+    "label": "three where subquery levels"
+  },
+  {
+    "sql": "INSERT INTO T (a) VALUES (1)",
+    "label": "insert"
+  },
+  {
+    "sql": "UPDATE T SET a = 1",
+    "label": "update"
+  },
+  {
+    "sql": "DELETE FROM T",
+    "label": "delete"
+  },
+  {
+    "sql": "DROP TABLE T",
+    "label": "drop"
+  },
+  {
+    "sql": "CREATE TABLE X (a INT)",
+    "label": "create"
+  },
+  {
+    "sql": "ALTER TABLE T ADD (b INT)",
+    "label": "alter"
+  },
+  {
+    "sql": "TRUNCATE TABLE T",
+    "label": "truncate"
+  },
+  {
+    "sql": "CALL MY_PROC()",
+    "label": "call"
+  },
+  {
+    "sql": "MERGE INTO T USING U ON T.a = U.a WHEN MATCHED THEN UPDATE SET T.b = U.b",
+    "label": "merge"
+  },
+  {
+    "sql": "GRANT SELECT ON T TO PUBLIC",
+    "label": "grant"
+  },
+  {
+    "sql": "EXPLAIN PLAN FOR SELECT a FROM T",
+    "label": "explain plan"
+  },
+  {
+    "sql": "EXPLAIN SELECT a FROM T",
+    "label": "explain"
+  },
+  {
+    "sql": "SET SCHEMA OTHER",
+    "label": "set schema"
+  },
+  {
+    "sql": "SET TRANSACTION READ WRITE",
+    "label": "set transaction"
+  },
+  {
+    "sql": "COMMIT",
+    "label": "commit"
+  },
+  {
+    "sql": "UPSERT T VALUES (1)",
+    "label": "upsert"
+  },
+  {
+    "sql": "REPLACE T VALUES (1)",
+    "label": "replace statement"
+  },
+  {
+    "sql": "LOCK TABLE T IN EXCLUSIVE MODE",
+    "label": "lock"
+  },
+  {
+    "sql": "EXEC 'DROP TABLE T'",
+    "label": "exec"
+  },
+  {
+    "sql": "DO $$ BEGIN END $$",
+    "label": "do block"
+  },
+  {
+    "sql": "COPY T TO '/tmp/x'",
+    "label": "copy"
+  },
+  {
+    "sql": "SELECT a FROM T WHERE b = (SELECT MAX(c) FROM U) AND 1=1; --",
+    "label": "stacked trailing comment"
+  },
+  {
+    "sql": "SELECT SLEEP(10) FROM T",
+    "label": "unknown function sleep"
+  },
+  {
+    "sql": "SELECT SYSTEM_USER FROM T",
+    "label": "system_user"
+  },
+  {
+    "sql": "SELECT CURRENT_USER FROM T",
+    "label": "current_user"
+  },
+  {
+    "sql": "SELECT SESSION_CONTEXT('x') FROM T",
+    "label": "session_context"
+  },
+  {
+    "sql": "SELECT pg_sleep(5) FROM T",
+    "label": "pg_sleep"
+  },
+  {
+    "sql": "SELECT a FROM T WHERE b = ANY (SELECT b FROM U)",
+    "label": "any subquery"
+  },
+  {
+    "sql": "SELECT a FROM TABLE(MY_FUNC(1))",
+    "label": "table function"
+  },
+  {
+    "sql": "SELECT MY_SCALAR_FUNC(a) FROM T",
+    "label": "user function"
+  },
+  {
+    "sql": "SELECT a FROM T WHERE b = $1",
+    "label": "positional param"
+  },
+  {
+    "sql": "SELECT a FROM T WHERE b = ?",
+    "label": "question mark param"
+  },
+  {
+    "sql": "SELECT a FROM T WHERE b = :p",
+    "label": "named param"
+  },
+  {
+    "sql": "SELECT a, b FROM T WHERE c = 1 UNION SELECT user_name, 1 FROM SYS.USERS",
+    "label": "union exfil"
+  },
+  {
+    "sql": "SELECT a FROM T WHERE b = 1 OR 1 = 1; --",
+    "label": "tautology stacked"
+  },
+  {
+    "sql": "SELECT a FROM T WHERE b = 'x' OR (SELECT COUNT(*) FROM SYS.USERS) > 0",
+    "label": "scalar subquery on sys"
+  },
+  {
+    "sql": "SELECT a FROM T WHERE b = 1；DROP TABLE T",
+    "label": "fullwidth semicolon"
+  },
+  {
+    "sql": "SELECT а FROM T",
+    "label": "cyrillic a identifier"
+  },
+  {
+    "sql": "SELECT a FROM Т",
+    "label": "cyrillic T table"
+  },
+  {
+    "sql": "SELECT a FROM T WHERE b = 1 ‮-- x",
+    "label": "bidi override"
+  },
+  {
+    "sql": "SELECT a\u0000 FROM T",
+    "label": "nul byte"
+  },
+  {
+    "sql": "SELECT a FROM T WHERE b = 1",
+    "label": "line separator"
+  },
+  {
+    "sql": "SELECT a FROM T WHERE b = E'\\'; DROP TABLE T; --'",
+    "label": "backslash escape string"
+  },
+  {
+    "sql": "SELECT a FROM T WHERE b = 'unterminated",
+    "label": "unterminated string"
+  },
+  {
+    "sql": "SELECT a FROM \"T",
+    "label": "unterminated identifier"
+  },
+  {
+    "sql": "SELECT a FROM T WHERE b = U&'\\0041'",
+    "label": "unicode escape literal"
+  },
+  {
+    "sql": "",
+    "label": "empty"
+  },
+  {
+    "sql": "   ",
+    "label": "blank"
+  },
+  {
+    "sql": "SELECT",
+    "label": "only select"
+  },
+  {
+    "sql": "(SELECT a FROM T)",
+    "label": "parenthesized statement"
+  },
+  {
+    "sql": "SELECT a FROM T WHERE b = 1 AND",
+    "label": "dangling and"
+  },
+  {
+    "sql": "VALUES (1)",
+    "label": "values"
+  }
+]

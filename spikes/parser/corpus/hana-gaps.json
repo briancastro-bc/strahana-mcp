@@ -1,0 +1,10 @@
+[
+  { "sql": "SELECT CAST(o.CODE AS NVARCHAR(10)) AS code FROM SALES_ORDERS o", "gap": "NVARCHAR in CAST not parsed" },
+  { "sql": "SELECT CAST(o.CREATED_AT AS SECONDDATE) AS ts FROM SALES_ORDERS o", "gap": "SECONDDATE type not parsed" },
+  { "sql": "SELECT CAST(o.CREATED_AT AS DAYDATE) AS d FROM SALES_ORDERS o", "gap": "DAYDATE type not parsed" },
+  { "sql": "SELECT CAST(o.PRICE AS SMALLDECIMAL) AS p FROM SALES_ORDERS o", "gap": "SMALLDECIMAL type not parsed" },
+  { "sql": "SELECT SUBSTRING(c.NAME FROM 1 FOR 3) AS p FROM CUSTOMERS c", "gap": "PostgreSQL SUBSTRING ... FROM ... FOR fails to parse (comma form works)" },
+  { "sql": "SELECT o.ORDER_ID FROM SALES_ORDERS o WHERE o.RATE = 1.5E3", "gap": "exponent number literal yields an unrecognized bigint node (rejected by the walker)" },
+  { "sql": "SELECT TO_VARCHAR(o.CREATED_AT, 'YYYY-MM-DD') AS d FROM SALES_ORDERS o", "gap": "valid HANA function absent from the prototype allow-list (policy gap, not a parser gap)" },
+  { "sql": "SELECT LOCATE(c.NAME, 'A') AS pos FROM CUSTOMERS c", "gap": "valid HANA function absent from the prototype allow-list (policy gap, not a parser gap)" }
+]
