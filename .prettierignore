@@ -1,0 +1,10 @@
+dist
+node_modules
+mta_archives
+spikes
+pnpm-lock.yaml
+*.md
+docs
+odd
+.atl
+.claude

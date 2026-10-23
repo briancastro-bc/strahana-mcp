@@ -1,0 +1,26 @@
+{
+  "VCAP_SERVICES": {
+    "user-provided": [
+      {
+        "name": "strahana-dev-sales",
+        "tags": ["strahana-hana"],
+        "credentials": {
+          "host": "example-instance.hana.invalid",
+          "port": "443",
+          "user": "STRAHANA_RO",
+          "password": "change-me-placeholder",
+          "encrypt": true,
+          "sslValidateCertificate": true
+        }
+      },
+      {
+        "name": "strahana-secrets",
+        "tags": ["strahana-secrets"],
+        "credentials": {
+          "signingKey": "<generate with: openssl rand -base64 48>",
+          "apiKeys": []
+        }
+      }
+    ]
+  }
+}

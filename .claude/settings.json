@@ -1,0 +1,5 @@
+{
+  "enabledPlugins": {
+    "mcp-apps@claude-plugins-official": true
+  }
+}

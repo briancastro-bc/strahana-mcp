@@ -1,0 +1,20 @@
+{
+  "environments": {
+    "DEV-SALES": {
+      "kind": "hana",
+      "label": "HANA Cloud DEV · Sales",
+      "productive": false,
+      "service": "strahana-dev-sales",
+      "schema": "SALES_HDI_DB_1",
+      "catalog": "catalog/sales.catalog.yaml",
+      "groups": ["STRAHANA_DEV_SALES"],
+      "limits": {
+        "pageSize": 50,
+        "maxRows": 500,
+        "timeoutSeconds": 30,
+        "maxResponseBytes": 16384,
+        "rateLimitPerMinute": 30
+      }
+    }
+  }
+}

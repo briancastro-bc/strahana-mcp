@@ -7,12 +7,9 @@
 ## Estado y veredicto
 
 - **Veredicto del MVP: VIABLE — GO.** Licenciamiento resuelto (HANA Cloud propio), hosting en BTP y autenticación interina por API key definidos.
-- Todavía no existe `package.json`. La siguiente etapa es la **Fase 0 (preparación técnica)**, POV §16:
-  1. **Spike del parser SQL** (primer paso de código, descartable, en `spikes/`).
-  2. Usuario `STRAHANA_RO` con un rol `.hdbrole` de solo `SELECT`.
-  3. Conexiones permitidas desde BTP en HANA Cloud.
-  4. Cliente MCP aprobado con soporte de encabezados personalizados.
-- El código de producto (Fase 1 en adelante) empieza cuando el spike del parser esté aprobado.
+- **Fase 0:** el spike del parser SQL está hecho y aprobado (`spikes/`). Siguen pendientes, y son externos al código: usuario `STRAHANA_RO` con un `.hdbrole` de solo `SELECT`, conexiones permitidas desde BTP en HANA Cloud y cliente MCP aprobado con soporte de encabezados personalizados.
+- **Fase 1 (plataforma): implementada.** `platform/` (errores, logger, HMAC, configuración, autenticación por API key, servidor MCP stdio + HTTP), `hana/access` (autorización por entorno), catálogo de herramientas con `hana_context` y `hana_query` como marcadores (`NOT_IMPLEMENTED`), `docs/tools.md`, `mta.yaml` y README.
+- **Siguiente:** Fase 2 (`catalog` + `hana_context`), luego Fase 3 (`query` + `hana_query`). `@sap/hana-client` se instala recién cuando una fase lo necesite.
 
 ## Flujo (no cambiar sin actualizar el POV)
 
@@ -40,20 +37,22 @@ Solo lo que describe el POV. Todo lo que está en `docs/proposals/` está **fuer
 
 No agregar dependencias fuera de esta lista sin consultar primero. `@sap/xssec` entra recién con [P-017](docs/proposals/P-017-autenticacion-ias.md).
 
-## Comandos (planificados, se crean en la Fase 1)
+## Comandos
 
 ```bash
-npm run build                                   # tsc → dist/
-npm test                                        # node --test (unitarias, validador, presupuestos de tokens)
-npm run lint                                    # eslint + prettier --check
-npm run docs:tools                              # genera docs/tools.md desde el catálogo de herramientas
-npm run apikey:new -- --user <id> --groups <g>  # emite una API key (se muestra una sola vez)
+pnpm build                                   # tsc → dist/
+pnpm test                                    # compila y ejecuta node --test (unitarias, presupuestos de tokens)
+pnpm lint                                    # eslint + prettier --check
+pnpm docs:tools                              # genera docs/tools.md desde el catálogo de herramientas
+pnpm apikey:new -- --user <id> --groups <g>  # emite una API key (se muestra una sola vez)
+pnpm start                                   # servidor HTTP (PORT, 8080 por defecto)
+pnpm start:stdio                             # servidor local por stdio (rechaza entornos productivos)
 mbt build && cf deploy mta_archives/<archivo>.mtar
 ```
 
 ## Arquitectura: screaming + hexagonal por bounded context
 
-```
+```plain
 src/
 ├── platform/        # mcp (createMcpServer + transportes), auth (TokenVerifier + ApiKeyVerifier), config, errors, logging, security (HMAC)
 └── hana/
@@ -71,6 +70,10 @@ Cada bounded context tiene `domain/` (puro, sin I/O), `application/` (casos de u
 - Todo verificador de autenticación produce `Principal { userId, groups[] }`; la autorización cruza `groups` con `environments.*.groups`.
 
 ## Reglas no negociables
+
+### Implementación
+
+- No realizar commits automáticamente, los commits deben ser lanzados manualmente por el ser humano.
 
 ### Solo lectura
 
@@ -123,5 +126,5 @@ Cada bounded context tiene `domain/` (puro, sin I/O), `application/` (casos de u
 
 - **Documentación** (`docs/`, este archivo, README, catálogos) en **español latino neutro**.
 - **Código, identificadores, comentarios, descripciones de herramientas MCP, mensajes de error y logs** en **inglés**.
-- Conventional Commits. Sin atribución de IA en los commits.
+- Sigue las **Reglas no negociables**. Conventional Commits. Sin atribución de IA en los commits.
 - Nuevas funcionalidades fuera del MVP: crear o actualizar una propuesta en `docs/proposals/` con su plantilla, no código.

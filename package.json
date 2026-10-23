@@ -1,14 +1,27 @@
 {
   "name": "strahana",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "version": "0.1.0",
+  "private": true,
+  "description": "Read-only MCP server for SAP HANA databases, deployed on SAP BTP Cloud Foundry.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "dist/src/index.js",
+  "bin": {
+    "strahana": "dist/src/index.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "pnpm build && node --test \"dist/test/**/*.test.js\"",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "docs:tools": "pnpm build && node dist/scripts/docs-tools.js",
+    "apikey:new": "pnpm build && node dist/scripts/apikey-new.js",
+    "start": "node dist/src/index.js --transport http",
+    "start:stdio": "node dist/src/index.js --transport stdio"
+  },
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
@@ -16,5 +29,20 @@
       "onFail": "download"
     }
   },
-  "type": "module"
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "@sap/xsenv": "6.2.2",
+    "express": "5.3.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/express": "5.0.6",
+    "@types/node": "22.20.5",
+    "eslint": "10.13.0",
+    "globals": "17.13.0",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.0"
+  }
 }

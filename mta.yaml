@@ -1,0 +1,55 @@
+_schema-version: '3.3.0'
+ID: strahana
+version: 0.1.0
+description: STRAHANA - read-only MCP server for SAP HANA (SAP BTP, Cloud Foundry)
+
+parameters:
+  enable-parallel-deployments: true
+
+modules:
+  - name: strahana
+    type: nodejs
+    path: .
+    parameters:
+      buildpack: nodejs_buildpack
+      # A single instance: the rate limiter is in memory (POV 14).
+      instances: 1
+      memory: 256M
+      disk-quota: 512M
+      command: node dist/src/index.js --transport http
+      health-check-type: http
+      health-check-http-endpoint: /health
+    build-parameters:
+      builder: custom
+      commands:
+        - pnpm install --frozen-lockfile
+        - pnpm build
+      # catalog/ and strahana.config.json ship with the app; secrets never do.
+      ignore:
+        - .git/
+        - .atl/
+        - .claude/
+        - node_modules/
+        - mta_archives/
+        - spikes/
+        - docs/
+        - odd/
+        - test/
+        - dist/test/
+        - default-env.json
+        - '*.mtar'
+    requires:
+      # One entry per connection service referenced in strahana.config.json.
+      - name: strahana-dev-sales
+      - name: strahana-secrets
+
+resources:
+  # Existing user-provided services, created with `cf create-user-provided-service`.
+  - name: strahana-dev-sales
+    type: org.cloudfoundry.existing-service
+    parameters:
+      service-name: strahana-dev-sales
+  - name: strahana-secrets
+    type: org.cloudfoundry.existing-service
+    parameters:
+      service-name: strahana-secrets
