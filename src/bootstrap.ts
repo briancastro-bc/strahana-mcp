@@ -1,6 +1,6 @@
 import type { AddressInfo } from 'node:net';
 import { parseArgs } from 'node:util';
-import { hanaTools } from './hana/mcp/tool-catalog.js';
+import { createConfiguredHanaTools } from './hana/mcp/hana-tools.js';
 import { ApiKeyVerifier } from './platform/auth/api-key-verifier.js';
 import { createLocalPrincipal } from './platform/auth/principal.js';
 import {
@@ -12,6 +12,7 @@ import {
   readConfigFile,
   type TransportMode,
 } from './platform/config/runtime-config.js';
+import type { Clock } from './platform/clock.js';
 import { errors } from './platform/errors/sanitized-error.js';
 import { createLogger, type Logger } from './platform/logging/logger.js';
 import { createMcpServer } from './platform/mcp/create-mcp-server.js';
@@ -75,6 +76,8 @@ export interface RunningApp {
 export interface StartDeps {
   credentials?: CredentialProvider;
   logger?: Logger;
+  /** Clock for contexts and rate limits (tests). */
+  clock?: Clock;
   /** Interface to bind in HTTP mode (all interfaces on Cloud Foundry). */
   host?: string;
 }
@@ -86,6 +89,10 @@ export async function start(options: CliOptions, deps: StartDeps = {}): Promise<
   const config = readConfigFile(options.configPath);
   const runtime = loadRuntimeConfig({ config, credentials, mode: options.mode });
   const serverInfo = { name: 'strahana', version: VERSION };
+  const tools = createConfiguredHanaTools(
+    { environments: runtime.environments, signingKey: runtime.signingKey },
+    { logger, ...(deps.clock === undefined ? {} : { clock: deps.clock }) },
+  );
 
   if (options.mode === 'stdio') {
     for (const name of runtime.rejectedProductive) {
@@ -94,7 +101,7 @@ export async function start(options: CliOptions, deps: StartDeps = {}): Promise<
     const principal = createLocalPrincipal(
       Object.values(runtime.environments).flatMap((env) => env.groups),
     );
-    const server = createMcpServer({ tools: hanaTools, principal, logger, serverInfo });
+    const server = createMcpServer({ tools, principal, logger, serverInfo });
     await runStdio(server);
     logger.info('server started', { transport: 'stdio' });
     return { close: () => server.close() };
@@ -102,8 +109,7 @@ export async function start(options: CliOptions, deps: StartDeps = {}): Promise<
 
   const app = createHttpApp({
     verifier: new ApiKeyVerifier(runtime.apiKeys),
-    buildServer: (principal) =>
-      createMcpServer({ tools: hanaTools, principal, logger, serverInfo }),
+    buildServer: (principal) => createMcpServer({ tools, principal, logger, serverInfo }),
     logger,
   });
   const httpServer = await listen(app, options.port, deps.host);

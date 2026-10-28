@@ -7,6 +7,8 @@ export const LOG_FIELDS = [
   'user',
   'env',
   'sqlHash',
+  'questionHash',
+  'entities',
   'rows',
   'durationMs',
   'outcome',

@@ -1,0 +1,352 @@
+# yaml-language-server: $schema=../schemas/catalog.schema.json
+# Synthetic example catalog (invented tables). Replace it with the real domain catalog.
+domain: sales
+version: 1
+label: Ventas
+entities:
+  - name: COM_ACME_SALES_ORDERS
+    label: Pedidos de venta
+    synonyms: [pedidos, órdenes, ventas, sales orders, orders]
+    columns:
+      - { name: ID, type: string, length: 36, key: true, label: ID }
+      - {
+          name: ORDERNUMBER,
+          type: string,
+          length: 10,
+          label: Nº pedido,
+          synonyms: [número de pedido, order number],
+        }
+      - {
+          name: CREATEDAT,
+          type: timestamp,
+          label: Creado,
+          synonyms: [fecha de creación, fecha del pedido, created, order date],
+        }
+      - { name: CUSTOMER_ID, type: string, length: 36, label: Cliente, synonyms: [customer] }
+      - {
+          name: SALESREP_ID,
+          type: string,
+          length: 36,
+          label: Vendedor,
+          synonyms: [representante, sales rep],
+        }
+      - { name: STATUS_CODE, type: string, length: 1, label: Estado, synonyms: [status, situación] }
+      - {
+          name: TOTALAMOUNT,
+          type: decimal,
+          precision: 15,
+          scale: 2,
+          label: Importe total,
+          synonyms: [monto, total amount, ventas totales, facturación],
+        }
+      - {
+          name: CURRENCY_CODE,
+          type: string,
+          length: 3,
+          label: Moneda,
+          synonyms: [currency, divisa],
+        }
+      - {
+          name: DELIVERYDATE,
+          type: date,
+          label: Entrega prevista,
+          synonyms: [fecha de entrega, delivery date],
+        }
+      - { name: NOTES, type: string, length: 255, label: Notas, synonyms: [comentarios, comments] }
+      - {
+          name: PAYMENTTERMS,
+          type: string,
+          length: 4,
+          label: Condición pago,
+          synonyms: [payment terms, plazo de pago],
+        }
+      - {
+          name: CHANNEL_CODE,
+          type: string,
+          length: 2,
+          label: Canal,
+          synonyms: [channel, canal de venta],
+        }
+    joins:
+      - { entity: COM_ACME_SALES_CUSTOMERS, on: { CUSTOMER_ID: ID } }
+      - { entity: COM_ACME_SALES_SALESREPS, on: { SALESREP_ID: ID } }
+    rules:
+      - 'STATUS_CODE: O=open, C=closed, X=cancelled'
+  - name: COM_ACME_SALES_ORDERITEMS
+    label: Posiciones de pedido
+    synonyms: [posiciones, líneas de pedido, items, order lines, detalle del pedido]
+    columns:
+      - { name: ID, type: string, length: 36, key: true, label: ID }
+      - { name: ORDER_ID, type: string, length: 36, label: Pedido, synonyms: [order] }
+      - {
+          name: PRODUCT_ID,
+          type: string,
+          length: 36,
+          label: Producto,
+          synonyms: [product, artículo],
+        }
+      - { name: QUANTITY, type: integer, label: Cantidad, synonyms: [unidades, quantity, units] }
+      - {
+          name: UNITPRICE,
+          type: decimal,
+          precision: 15,
+          scale: 2,
+          label: Precio unitario,
+          synonyms: [unit price, precio],
+        }
+      - {
+          name: DISCOUNT,
+          type: decimal,
+          precision: 5,
+          scale: 2,
+          label: Descuento,
+          synonyms: [discount, rebaja],
+        }
+      - {
+          name: NETAMOUNT,
+          type: decimal,
+          precision: 15,
+          scale: 2,
+          label: Importe neto,
+          synonyms: [net amount, neto],
+        }
+    joins:
+      - { entity: COM_ACME_SALES_ORDERS, on: { ORDER_ID: ID } }
+      - { entity: COM_ACME_SALES_PRODUCTS, on: { PRODUCT_ID: ID } }
+  - name: COM_ACME_SALES_CUSTOMERS
+    label: Clientes
+    synonyms: [clientes, compradores, customers, buyers]
+    columns:
+      - { name: ID, type: string, length: 36, key: true, label: ID }
+      - {
+          name: NAME,
+          type: string,
+          length: 111,
+          label: Nombre,
+          synonyms: [razón social, name, nombre del cliente],
+        }
+      - { name: COUNTRY_CODE, type: string, length: 3, label: País, synonyms: [country] }
+      - { name: CITY, type: string, length: 60, label: Ciudad, synonyms: [city, población] }
+      - {
+          name: INDUSTRY_CODE,
+          type: string,
+          length: 4,
+          label: Sector,
+          synonyms: [industria, industry],
+        }
+      - {
+          name: CREDITLIMIT,
+          type: decimal,
+          precision: 15,
+          scale: 2,
+          label: Límite crédito,
+          synonyms: [credit limit, línea de crédito],
+        }
+      - { name: CREATEDAT, type: timestamp, label: Alta, synonyms: [fecha de alta, customer since] }
+      - { name: ACTIVE, type: boolean, label: Activo, synonyms: [active, vigente] }
+  - name: COM_ACME_SALES_PRODUCTS
+    label: Productos
+    synonyms: [productos, artículos, materiales, products, items catalog]
+    columns:
+      - { name: ID, type: string, length: 36, key: true, label: ID }
+      - {
+          name: SKU,
+          type: string,
+          length: 18,
+          label: Código producto,
+          synonyms: [sku, referencia, código de artículo],
+        }
+      - {
+          name: NAME,
+          type: string,
+          length: 80,
+          label: Descripción,
+          synonyms: [nombre del producto, product name, description],
+        }
+      - {
+          name: CATEGORY_ID,
+          type: string,
+          length: 36,
+          label: Categoría,
+          synonyms: [category, familia],
+        }
+      - {
+          name: LISTPRICE,
+          type: decimal,
+          precision: 15,
+          scale: 2,
+          label: Precio lista,
+          synonyms: [list price, tarifa],
+        }
+      - {
+          name: WEIGHT,
+          type: decimal,
+          precision: 10,
+          scale: 3,
+          label: Peso,
+          synonyms: [weight, kilos],
+        }
+      - { name: ACTIVE, type: boolean, label: Activo, synonyms: [active, descatalogado] }
+    joins:
+      - { entity: COM_ACME_SALES_PRODUCTCATEGORIES, on: { CATEGORY_ID: ID } }
+  - name: COM_ACME_SALES_PRODUCTCATEGORIES
+    label: Categorías de producto
+    synonyms: [categorías, familias de producto, product categories]
+    columns:
+      - { name: ID, type: string, length: 36, key: true, label: ID }
+      - {
+          name: NAME,
+          type: string,
+          length: 60,
+          label: Nombre,
+          synonyms: [categoría, category name],
+        }
+      - {
+          name: PARENT_ID,
+          type: string,
+          length: 36,
+          label: Categoría padre,
+          synonyms: [parent category],
+        }
+  - name: COM_ACME_SALES_INVOICES
+    label: Facturas
+    synonyms: [facturas, invoices, facturación, billing]
+    columns:
+      - { name: ID, type: string, length: 36, key: true, label: ID }
+      - {
+          name: INVOICENUMBER,
+          type: string,
+          length: 12,
+          label: Nº factura,
+          synonyms: [invoice number, número de factura],
+        }
+      - { name: ORDER_ID, type: string, length: 36, label: Pedido, synonyms: [order] }
+      - { name: CUSTOMER_ID, type: string, length: 36, label: Cliente, synonyms: [customer] }
+      - {
+          name: INVOICEDATE,
+          type: date,
+          label: Fecha factura,
+          synonyms: [invoice date, fecha de facturación],
+        }
+      - {
+          name: DUEDATE,
+          type: date,
+          label: Vencimiento,
+          synonyms: [due date, fecha de vencimiento],
+        }
+      - {
+          name: GROSSAMOUNT,
+          type: decimal,
+          precision: 15,
+          scale: 2,
+          label: Importe bruto,
+          synonyms: [gross amount, total facturado],
+        }
+      - {
+          name: TAXAMOUNT,
+          type: decimal,
+          precision: 15,
+          scale: 2,
+          label: Impuestos,
+          synonyms: [tax, iva],
+        }
+      - { name: CURRENCY_CODE, type: string, length: 3, label: Moneda, synonyms: [currency] }
+      - { name: PAID, type: boolean, label: Pagada, synonyms: [paid, cobrada] }
+    joins:
+      - { entity: COM_ACME_SALES_ORDERS, on: { ORDER_ID: ID } }
+      - { entity: COM_ACME_SALES_CUSTOMERS, on: { CUSTOMER_ID: ID } }
+  - name: COM_ACME_SALES_PAYMENTS
+    label: Pagos recibidos
+    synonyms: [pagos, cobros, payments, receipts]
+    columns:
+      - { name: ID, type: string, length: 36, key: true, label: ID }
+      - { name: INVOICE_ID, type: string, length: 36, label: Factura, synonyms: [invoice] }
+      - {
+          name: PAYMENTDATE,
+          type: date,
+          label: Fecha pago,
+          synonyms: [payment date, fecha de cobro],
+        }
+      - {
+          name: AMOUNT,
+          type: decimal,
+          precision: 15,
+          scale: 2,
+          label: Importe pagado,
+          synonyms: [amount paid, cobrado],
+        }
+      - {
+          name: METHOD_CODE,
+          type: string,
+          length: 2,
+          label: Medio pago,
+          synonyms: [payment method, forma de pago],
+        }
+    joins:
+      - { entity: COM_ACME_SALES_INVOICES, on: { INVOICE_ID: ID } }
+  - name: COM_ACME_SALES_SHIPMENTS
+    label: Envíos
+    synonyms: [envíos, entregas, despachos, shipments, deliveries]
+    columns:
+      - { name: ID, type: string, length: 36, key: true, label: ID }
+      - { name: ORDER_ID, type: string, length: 36, label: Pedido, synonyms: [order] }
+      - {
+          name: WAREHOUSE_ID,
+          type: string,
+          length: 36,
+          label: Almacén,
+          synonyms: [warehouse, bodega],
+        }
+      - {
+          name: SHIPPEDAT,
+          type: timestamp,
+          label: Enviado,
+          synonyms: [fecha de envío, shipped date],
+        }
+      - {
+          name: CARRIER,
+          type: string,
+          length: 40,
+          label: Transportista,
+          synonyms: [carrier, transportador],
+        }
+      - {
+          name: TRACKINGNUMBER,
+          type: string,
+          length: 30,
+          label: Nº seguimiento,
+          synonyms: [tracking number, guía],
+        }
+      - { name: DELIVERED, type: boolean, label: Entregado, synonyms: [delivered] }
+    joins:
+      - { entity: COM_ACME_SALES_ORDERS, on: { ORDER_ID: ID } }
+      - { entity: COM_ACME_SALES_WAREHOUSES, on: { WAREHOUSE_ID: ID } }
+  - name: COM_ACME_SALES_WAREHOUSES
+    label: Almacenes
+    synonyms: [almacenes, bodegas, depósitos, warehouses]
+    columns:
+      - { name: ID, type: string, length: 36, key: true, label: ID }
+      - { name: NAME, type: string, length: 60, label: Nombre, synonyms: [name] }
+      - { name: COUNTRY_CODE, type: string, length: 3, label: País, synonyms: [country] }
+      - { name: CAPACITY, type: bigint, label: Capacidad, synonyms: [capacity] }
+  - name: COM_ACME_SALES_SALESREPS
+    label: Vendedores
+    synonyms: [vendedores, representantes, comerciales, sales reps, salespeople]
+    columns:
+      - { name: ID, type: string, length: 36, key: true, label: ID }
+      - {
+          name: NAME,
+          type: string,
+          length: 80,
+          label: Nombre,
+          synonyms: [name, nombre del vendedor],
+        }
+      - { name: REGION_CODE, type: string, length: 4, label: Región, synonyms: [region, zona] }
+      - {
+          name: QUOTA,
+          type: decimal,
+          precision: 15,
+          scale: 2,
+          label: Cuota anual,
+          synonyms: [quota, objetivo de ventas, target],
+        }

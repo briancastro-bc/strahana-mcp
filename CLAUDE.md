@@ -9,7 +9,8 @@
 - **Veredicto del MVP: VIABLE — GO.** Licenciamiento resuelto (HANA Cloud propio), hosting en BTP y autenticación interina por API key definidos.
 - **Fase 0:** el spike del parser SQL está hecho y aprobado (`spikes/`). Siguen pendientes, y son externos al código: usuario `STRAHANA_RO` con un `.hdbrole` de solo `SELECT`, conexiones permitidas desde BTP en HANA Cloud y cliente MCP aprobado con soporte de encabezados personalizados.
 - **Fase 1 (plataforma): implementada.** `platform/` (errores, logger, HMAC, configuración, autenticación por API key, servidor MCP stdio + HTTP), `hana/access` (autorización por entorno), catálogo de herramientas con `hana_context` y `hana_query` como marcadores (`NOT_IMPLEMENTED`), `docs/tools.md`, `mta.yaml` y README.
-- **Siguiente:** Fase 2 (`catalog` + `hana_context`), luego Fase 3 (`query` + `hana_query`). `@sap/hana-client` se instala recién cuando una fase lo necesite.
+- **Fase 2 (catálogo + `hana_context`): implementada.** `hana/catalog` (modelo, esquema zod + JSON Schema, cargador YAML, índice MiniSearch, contexto compacto, `context_id` firmado), guardas y rate limit en `hana/access`, `hana_context` operativo con auditoría; recall 96 % en 30 preguntas sintéticas y contexto ≤ 800 tokens verificados en CI. `hana_query` sigue como marcador.
+- **Siguiente:** Fase 3 (`query` + `hana_query`). `@sap/hana-client` se instala recién cuando una fase lo necesite.
 
 ## Flujo (no cambiar sin actualizar el POV)
 

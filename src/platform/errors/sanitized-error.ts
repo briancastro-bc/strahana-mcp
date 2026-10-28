@@ -1,5 +1,5 @@
 /**
- * Error codes shared with ssff-mcp (POV 4.4). The last three are platform-level additions.
+ * Error codes shared with ssff-mcp (POV 4.4). The last four are platform-level additions.
  */
 export const ERROR_CODES = [
   'AUTH_REQUIRED',
@@ -18,6 +18,7 @@ export const ERROR_CODES = [
   'DB_TIMEOUT',
   'DB_ERROR',
   'NOT_IMPLEMENTED',
+  'INPUT_INVALID',
   'CONFIG_INVALID',
   'INTERNAL_ERROR',
 ] as const;
@@ -62,6 +63,19 @@ export const errors = {
     new SanitizedError('ENV_FORBIDDEN', `No access to environment ${environment}.`),
   noEnvironmentAccess: () =>
     new SanitizedError('ENV_FORBIDDEN', 'No access to any environment. Ask an administrator.'),
+  rateLimited: (retryAfterSeconds: number) =>
+    new SanitizedError('RATE_LIMITED', `Too many requests. Retry in ${retryAfterSeconds}s.`),
+  questionIsSql: () =>
+    new SanitizedError(
+      'QUESTION_IS_SQL',
+      'hana_context expects a natural-language question, not SQL.',
+    ),
+  contextInvalid: () =>
+    new SanitizedError(
+      'CONTEXT_INVALID',
+      'context_id expired or invalid. Call hana_context again.',
+    ),
+  invalidInput: (detail: string) => new SanitizedError('INPUT_INVALID', detail),
   notImplemented: (tool: string, phase: number) =>
     new SanitizedError(
       'NOT_IMPLEMENTED',

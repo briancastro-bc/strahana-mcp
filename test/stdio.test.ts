@@ -38,7 +38,7 @@ const env = (service: string, productive: boolean) => ({
   productive,
   service,
   schema: 'SYNTH',
-  catalog: 'catalog/x.yaml',
+  catalog: 'catalog/sales.catalog.yaml',
   groups: ['G'],
 });
 
