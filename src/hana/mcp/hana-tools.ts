@@ -13,16 +13,24 @@ import { systemClock, type Clock } from '../../platform/clock.js';
 import { errors } from '../../platform/errors/sanitized-error.js';
 import type { Logger } from '../../platform/logging/logger.js';
 import type { ToolDefinition } from '../../platform/mcp/tool-definition.js';
+import { createRunQuery, type QueryEnvironment } from '../query/application/run-query.js';
+import type { SqlExecutor } from '../query/application/ports.js';
+import { NodeSqlParserAdapter } from '../query/infrastructure/node-sql-parser-adapter.js';
 import { createContextHandler, type ContextEnvironment } from './context-handler.js';
+import { createQueryHandler } from './query-handler.js';
 import { createHanaTools } from './tool-catalog.js';
 
 export interface HanaToolsConfig {
-  environments: Readonly<Record<string, ContextEnvironment & { readonly catalog: string }>>;
+  environments: Readonly<
+    Record<string, ContextEnvironment & QueryEnvironment & { readonly catalog: string }>
+  >;
   signingKey: Buffer;
 }
 
 export interface HanaToolsDeps {
   logger: Logger;
+  /** Runs the validated SQL. In production it is the `@sap/hana-client` adapter. */
+  executor: SqlExecutor;
   clock?: Clock;
   catalogSource?: CatalogSource;
   rateLimiter?: RateLimiter;
@@ -31,8 +39,8 @@ export interface HanaToolsDeps {
 
 /**
  * Composition of the HANA tools: loads and indexes the catalog of every environment (an invalid
- * catalog fails the startup, POV 5.3) and wires `hana_context`. `hana_query` stays a placeholder
- * until phase 3.
+ * catalog fails the startup, POV 5.3) and wires `hana_context` and `hana_query`. Both tools share
+ * the catalogs, the context signer and the rate limiter.
  */
 export function createConfiguredHanaTools(
   config: HanaToolsConfig,
@@ -61,13 +69,26 @@ export function createConfiguredHanaTools(
     clock,
     ...(deps.contextTtlSeconds === undefined ? {} : { ttlSeconds: deps.contextTtlSeconds }),
   });
+  const rateLimiter = deps.rateLimiter ?? new InMemoryRateLimiter(clock);
   return createHanaTools({
     context: createContextHandler({
       environments: config.environments,
       buildContext: createBuildContext(lookup, codec),
-      rateLimiter: deps.rateLimiter ?? new InMemoryRateLimiter(clock),
+      rateLimiter,
       logger: deps.logger,
       clock,
     }),
+    query: createQueryHandler(
+      createRunQuery({
+        environments: config.environments,
+        catalogs: lookup,
+        codec,
+        parser: new NodeSqlParserAdapter(),
+        executor: deps.executor,
+        rateLimiter,
+        audit: deps.logger,
+        clock,
+      }),
+    ),
   });
 }

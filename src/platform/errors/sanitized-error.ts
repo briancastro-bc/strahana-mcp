@@ -75,6 +75,12 @@ export const errors = {
       'CONTEXT_INVALID',
       'context_id expired or invalid. Call hana_context again.',
     ),
+  dbTimeout: (seconds: number) =>
+    new SanitizedError(
+      'DB_TIMEOUT',
+      `Query exceeded ${seconds}s. Narrow the filters or aggregate.`,
+    ),
+  dbError: (detail: string) => new SanitizedError('DB_ERROR', detail),
   invalidInput: (detail: string) => new SanitizedError('INPUT_INVALID', detail),
   notImplemented: (tool: string, phase: number) =>
     new SanitizedError(

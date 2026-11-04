@@ -8,7 +8,7 @@ Scope: POV only. No proposals (docs/proposals) code.
 - [ ] P0.2 STRAHANA_RO .hdbrole + HANA connectivity checks (external, needs user/infra) - pending user
 - [x] P1 platform/ (config, credentials, errors, logger, API key, MCP stdio+HTTP, MTA) - implemented, uncommitted (CLAUDE.md: commits are manual); 75/75 tests, lint green
 - [x] P2 catalog context + hana_context (recall 96.0% >= 90%, context <= 800 tokens) - implemented, uncommitted; awaiting user review
-- [ ] P3 query context + hana_query (validator tests, execution as STRAHANA_RO)
+- [x] P3 query context + hana_query (code complete, in-memory executor; real-DB validation as STRAHANA_RO pending = P0.2 + opt-in integration test)
 - [ ] P4 pilot (user-driven)
 
 ## Routes
@@ -36,3 +36,13 @@ Route: delegated direct, one writer (prep reading of POV §4,8,9,11,12,13,14)
 Route: delegated direct, one writer. Commits: manual by the user (CLAUDE.md rule).
 Evidence P2 (observed): pnpm build ok; pnpm test 119/119 pass (recall 97/101 = 96.0% on 30 synthetic ES/EN questions; worst context ~430 tokens by bytes/4, budget 800); pnpm lint green (eslint + prettier); pnpm docs:tools -> docs/tools.md unchanged (drift test green); e2e over MCP HTTP: valid key gets context + signed context_id, invalid key / outsider / disallowed environment rejected; audit log has questionHash only.
 Open for user: entity-level `rules` field in the catalog (extension, see report); recall misses are synonym gaps (impagas/unpaid/discontinued/cancelados) kept honest in the fixtures. No commits made (CLAUDE.md rule).
+
+## Phase 3 breakdown (query + hana_query) — no real DB tests yet (user decision); commits manual by user
+- [x] P3.1 query/domain: SQL policy + validator (POV §6), exhaustive positive/negative tests, fuzzing, column/table resolution vs catalog+context
+- [x] P3.2 query/application: hana_query use case (guards, context_id verify, validate, execute via port, pagination, TSV format, notes, maxResponseBytes)
+- [x] P3.3 query/infrastructure: @sap/hana-client executor (read-only txn, timeout, schema fixed per env, pool) behind a port; opt-in integration test skipped by default
+- [x] P3.4 hana/mcp: wire hana_query, audit (user, env, sql hash, rows, duration, result, bytes), docs/tools.md, token budget tests
+- [x] P3.5 docs/README/CLAUDE.md state
+Route: delegated direct, one writer.
+Evidence P3 (observed, see final run): pnpm install --frozen-lockfile ok (deps pinned: node-sql-parser 5.4.0, @sap/hana-client 2.30.27 with allowBuilds in pnpm-workspace.yaml); pnpm build ok; pnpm test 548 tests / 545 pass / 0 fail / 3 skipped (the opt-in integration tests); validator: 41 positive + 141 negative cases (exact error code each), spike corpus ported (62 allowed accepted, 102 forbidden rejected, 8 gaps: 6 parser gaps still rejected with an actionable hint, TO_VARCHAR/LOCATE now whitelisted), seeded fuzz 20000 mutants (seed 0xC0FFEE) with an independent text oracle, extra seeds up to 60000 iterations explored by hand; fuzz found one real bypass during development (schema-qualified function `S.UPPER(x)`), fixed and covered; pnpm lint green; pnpm docs:tools -> docs/tools.md unchanged (drift test green); e2e over MCP HTTP with an in-memory executor: hana_context -> hana_query happy path, pagination (120 rows, no repeats/skips), invalid context_id, other user's context_id, forbidden SQL, table outside context, DB errors sanitized, response-size cap; typical 50-row x 4-col page ~424 tokens (bytes/4, budget 1500); tools/list budget test unchanged (<= 300).
+Open for user / not verified: real HANA Cloud run (SET TRANSACTION READ ONLY acceptance, Statement.setTimeout, rowsAsArray result shape, error codes in hana-error-mapping.ts are from memory of the SAP error-code list), STRAHANA_RO write test (STRAHANA_IT=1), p95 < 3 s. Decisions to confirm: trailing ';' is rejected (spike/POV); limit > maxRows is rejected (POV 6.3 rule 7); added limits.poolSize (default 4) to the config schema; case-insensitive matching for unquoted identifiers, exact match for quoted ones. No commits made (CLAUDE.md rule).

@@ -13,7 +13,8 @@
         "maxRows": 500,
         "timeoutSeconds": 30,
         "maxResponseBytes": 16384,
-        "rateLimitPerMinute": 30
+        "rateLimitPerMinute": 30,
+        "poolSize": 4
       }
     }
   }

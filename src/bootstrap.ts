@@ -1,6 +1,8 @@
 import type { AddressInfo } from 'node:net';
 import { parseArgs } from 'node:util';
 import { createConfiguredHanaTools } from './hana/mcp/hana-tools.js';
+import type { SqlExecutor } from './hana/query/application/ports.js';
+import { HanaSqlExecutor } from './hana/query/infrastructure/hana-executor.js';
 import { ApiKeyVerifier } from './platform/auth/api-key-verifier.js';
 import { createLocalPrincipal } from './platform/auth/principal.js';
 import {
@@ -78,6 +80,8 @@ export interface StartDeps {
   logger?: Logger;
   /** Clock for contexts and rate limits (tests). */
   clock?: Clock;
+  /** Replaces the `@sap/hana-client` executor (tests, or a database stand-in). */
+  executor?: SqlExecutor;
   /** Interface to bind in HTTP mode (all interfaces on Cloud Foundry). */
   host?: string;
 }
@@ -89,9 +93,15 @@ export async function start(options: CliOptions, deps: StartDeps = {}): Promise<
   const config = readConfigFile(options.configPath);
   const runtime = loadRuntimeConfig({ config, credentials, mode: options.mode });
   const serverInfo = { name: 'strahana', version: VERSION };
+  const hana =
+    deps.executor === undefined
+      ? new HanaSqlExecutor({ environments: runtime.environments })
+      : undefined;
+  const executor = deps.executor ?? hana;
+  if (executor === undefined) throw errors.internal();
   const tools = createConfiguredHanaTools(
     { environments: runtime.environments, signingKey: runtime.signingKey },
-    { logger, ...(deps.clock === undefined ? {} : { clock: deps.clock }) },
+    { logger, executor, ...(deps.clock === undefined ? {} : { clock: deps.clock }) },
   );
 
   if (options.mode === 'stdio') {
@@ -104,7 +114,12 @@ export async function start(options: CliOptions, deps: StartDeps = {}): Promise<
     const server = createMcpServer({ tools, principal, logger, serverInfo });
     await runStdio(server);
     logger.info('server started', { transport: 'stdio' });
-    return { close: () => server.close() };
+    return {
+      close: async () => {
+        await server.close();
+        await hana?.close();
+      },
+    };
   }
 
   const app = createHttpApp({
@@ -124,6 +139,6 @@ export async function start(options: CliOptions, deps: StartDeps = {}): Promise<
           else resolve();
         });
         httpServer.closeAllConnections();
-      }),
+      }).then(() => hana?.close()),
   };
 }

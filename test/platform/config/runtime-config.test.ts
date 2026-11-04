@@ -71,6 +71,7 @@ test('schema applies documented defaults to limits and productive', () => {
     timeoutSeconds: 30,
     maxResponseBytes: 16384,
     rateLimitPerMinute: 30,
+    poolSize: 4,
   });
 });
 

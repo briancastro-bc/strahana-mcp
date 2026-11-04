@@ -10,11 +10,12 @@
 - **Fase 0:** el spike del parser SQL está hecho y aprobado (`spikes/`). Siguen pendientes, y son externos al código: usuario `STRAHANA_RO` con un `.hdbrole` de solo `SELECT`, conexiones permitidas desde BTP en HANA Cloud y cliente MCP aprobado con soporte de encabezados personalizados.
 - **Fase 1 (plataforma): implementada.** `platform/` (errores, logger, HMAC, configuración, autenticación por API key, servidor MCP stdio + HTTP), `hana/access` (autorización por entorno), catálogo de herramientas con `hana_context` y `hana_query` como marcadores (`NOT_IMPLEMENTED`), `docs/tools.md`, `mta.yaml` y README.
 - **Fase 2 (catálogo + `hana_context`): implementada.** `hana/catalog` (modelo, esquema zod + JSON Schema, cargador YAML, índice MiniSearch, contexto compacto, `context_id` firmado), guardas y rate limit en `hana/access`, `hana_context` operativo con auditoría; recall 96 % en 30 preguntas sintéticas y contexto ≤ 800 tokens verificados en CI. `hana_query` sigue como marcador.
-- **Siguiente:** Fase 3 (`query` + `hana_query`). `@sap/hana-client` se instala recién cuando una fase lo necesite.
+- **Fase 3 (consulta): implementada en código; validación contra una base real pendiente.** `hana/query` (validador de SQL por subconjunto con falla cerrada, paginación `LIMIT`/`OFFSET` del servidor, formato TSV con tope de bytes, caso de uso `runQuery`, ejecutor `@sap/hana-client` detrás del puerto `SqlExecutor`) y `hana_query` operativo con auditoría (sin SQL ni valores). Se probó con un ejecutor en memoria; la prueba de integración contra HANA Cloud con `STRAHANA_RO` (incluida la escritura que debe fallar) es opt-in (`STRAHANA_IT=1`) y sigue sin ejecutarse.
+- **Siguiente:** Fase 0 externa (usuario `STRAHANA_RO`, `SET TRANSACTION READ ONLY` verificado, conectividad desde BTP) y luego Fase 4 (piloto).
 
 ## Flujo (no cambiar sin actualizar el POV)
 
-```
+```plain
 hana_context(question) ─► 1 auth (API key) ─► 2 guardas ─► 3 detección de tablas y campos en el YAML + context_id firmado
 LLM del usuario       ─► 4 escribe el SELECT con ese contexto
 hana_query(sql, context_id) ─► 1 auth ─► 2 guardas ─► 5 validación ─► 6 ejecución ─► 7 TSV compacto

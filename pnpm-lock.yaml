@@ -200,6 +200,9 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: 1.32.1
         version: 1.32.1(zod@4.6.7)
+      '@sap/hana-client':
+        specifier: 2.30.27
+        version: 2.30.27
       '@sap/xsenv':
         specifier: 6.2.2
         version: 6.2.2
@@ -212,6 +215,9 @@ importers:
       minisearch:
         specifier: 7.2.0
         version: 7.2.0
+      node-sql-parser:
+        specifier: 5.4.0
+        version: 5.4.0
       yaml:
         specifier: 2.9.1
         version: 2.9.1
@@ -336,6 +342,10 @@ packages:
       '@cfworker/json-schema':
         optional: true
 
+  '@sap/hana-client@2.30.27':
+    resolution: {integrity: sha512-yXkwRcErq4BGfeNCtpkX7ZhZyjfz/IcP0H+QxQQtjrxA/prgm72pv3YC2GbHi5PMpHjjagQZrmaPUKXwYyEIJg==}
+    engines: {node: '>=4.0.0'}
+
   '@sap/xsenv@6.2.2':
     resolution: {integrity: sha512-SGn+yaVKeXND/rQaQhqTZC+M6g5ASW1YnqAdQiZqNL74E1T1kUsDHttgOjQNkLObMZ0fsxgQxRPMnuVcAgIODg==}
     engines: {node: ^20.0.0  || ^22.0.0 || ^24.0.0}
@@ -366,6 +376,9 @@ packages:
 
   '@types/node@22.20.5':
     resolution: {integrity: sha512-U2+DNr+wSjpsTS/wZGYHq7GcwfuSmKiKvoPvK22zwTlRhU91yOniN4qRR5KhIjvif7ysw/dz/hKmfDH0Ris4aA==}
+
+  '@types/pegjs@0.10.6':
+    resolution: {integrity: sha512-eLYXDbZWXh2uxf+w8sXS8d6KSoXTswfps6fvCUuVAGN8eRpfe7h9eSRydxiSJvo9Bf+GzifsDOr9TMQlmJdmkw==}
 
   '@types/qs@6.15.1':
     resolution: {integrity: sha512-GZHUBZR9hckSUhrxmp1nG6NwdpM9fCunJwyThLW1X3AyHgd9IlHb6VANpQQqDr2o/qQp6McZ3y/IA2rVzKzSbw==}
@@ -469,6 +482,10 @@ packages:
     resolution: {integrity: sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA==}
     engines: {node: 18 || 20 || >=22}
 
+  big-integer@1.6.52:
+    resolution: {integrity: sha512-QxD8cf2eVqJOOz63z6JIN9BzvVs/dlySa5HGSBH5xtR8dPteIRQnBxxKqkNTiT6jbDTF6jAfrd4oMcND9RGbQg==}
+    engines: {node: '>=0.6'}
+
   body-parser@2.3.0:
     resolution: {integrity: sha512-2cGmJupaNgg+QUwVLAucDuWuoMZ6EX9iHDRswZ5lsNYEmwPaRknMPCLZz07yTzVq/83p4o/wzbDZbBrTvGGTIw==}
     engines: {node: '>=18'}
@@ -526,6 +543,14 @@ packages:
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
+
+  debug@3.1.0:
+    resolution: {integrity: sha512-OX8XqP7/1a9cqkxYw2yXss15f26NKWBpDXQd0/uK/KPqdQhxbPa994hnzjcE2VqQpDslf55723cKPUOGSmMY3g==}
+    peerDependencies:
+      supports-color: '*'
+    peerDependenciesMeta:
+      supports-color:
+        optional: true
 
   debug@4.4.3:
     resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
@@ -834,6 +859,9 @@ packages:
   minisearch@7.2.0:
     resolution: {integrity: sha512-dqT2XBYUOZOiC5t2HRnwADjhNS2cecp9u+TJRiJ1Qp/f5qjkeT5APcGPjHw+bz89Ms8Jp+cG4AlE+QZ/QnDglg==}
 
+  ms@2.0.0:
+    resolution: {integrity: sha512-Tpp60P6IUJDTuOq/5Z8cdskzJujfwqfOTkrwIwj7IRISpnkJnT6SyJ4PCPnGMoFjC9ddhal5KVIYtAt97ix05A==}
+
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
@@ -847,6 +875,10 @@ packages:
   node-cache@5.1.2:
     resolution: {integrity: sha512-t1QzWwnk4sjLWaQAS8CHgOJ+RAfmHpxFWmc36IWTiWHQfs0w5JDMBS1b1ZxQteo0vVVuWJvIUKHDkkeK7vIGCg==}
     engines: {node: '>= 8.0.0'}
+
+  node-sql-parser@5.4.0:
+    resolution: {integrity: sha512-jVe6Z61gPcPjCElPZ6j8llB3wnqGcuQzefim1ERsqIakxnEy5JlzV7XKdO1KmacRG5TKwPc4vJTgSRQ0LfkbFw==}
+    engines: {node: '>=8'}
 
   object-assign@4.1.1:
     resolution: {integrity: sha512-rJgTQnkUnH1sFw8yT6VSU3zD3sWmu6sZhIseY8VX+GRu3P6F7Fu+JNDoXfklElbLJSnc3FUQHVe4cU5hj+BcUg==}
@@ -1165,6 +1197,12 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@sap/hana-client@2.30.27':
+    dependencies:
+      debug: 3.1.0
+    transitivePeerDependencies:
+      - supports-color
+
   '@sap/xsenv@6.2.2':
     dependencies:
       debug: 4.4.3
@@ -1206,6 +1244,8 @@ snapshots:
   '@types/node@22.20.5':
     dependencies:
       undici-types: 6.21.0
+
+  '@types/pegjs@0.10.6': {}
 
   '@types/qs@6.15.1': {}
 
@@ -1344,6 +1384,8 @@ snapshots:
 
   balanced-match@4.0.4: {}
 
+  big-integer@1.6.52: {}
+
   body-parser@2.3.0:
     dependencies:
       bytes: 3.1.2
@@ -1406,6 +1448,10 @@ snapshots:
       path-key: 3.1.1
       shebang-command: 2.0.0
       which: 2.0.2
+
+  debug@3.1.0:
+    dependencies:
+      ms: 2.0.0
 
   debug@4.4.3:
     dependencies:
@@ -1717,6 +1763,8 @@ snapshots:
 
   minisearch@7.2.0: {}
 
+  ms@2.0.0: {}
+
   ms@2.1.3: {}
 
   natural-compare@1.4.0: {}
@@ -1728,6 +1776,11 @@ snapshots:
   node-cache@5.1.2:
     dependencies:
       clone: 2.1.2
+
+  node-sql-parser@5.4.0:
+    dependencies:
+      '@types/pegjs': 0.10.6
+      big-integer: 1.6.52
 
   object-assign@4.1.1: {}
 

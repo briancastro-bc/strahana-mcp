@@ -8,6 +8,8 @@ export const limitsSchema = z
     timeoutSeconds: z.number().int().min(1).default(30),
     maxResponseBytes: z.number().int().min(1024).default(16384),
     rateLimitPerMinute: z.number().int().min(1).default(30),
+    /** Maximum database connections of the environment's pool. */
+    poolSize: z.number().int().min(1).max(50).default(4),
   })
   .refine((limits) => limits.pageSize <= limits.maxRows, {
     message: 'pageSize must not exceed maxRows',
