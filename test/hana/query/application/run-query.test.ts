@@ -145,6 +145,19 @@ test('happy path: executes the original text plus server paging and returns comp
   ]);
 });
 
+test('a trailing semicolon is stripped: the database receives valid paged text without it', async () => {
+  const { run, issue, executor } = setup();
+  const contextId = issue();
+  await run({ principal: analyst, sql: `${SQL};\n`, contextId });
+  assert.equal(executor.calls[0]?.sql, `${SQL} LIMIT 4 OFFSET 0`);
+  for (const sql of [`${SQL};;`, `${SQL}; SELECT 1`, `${SQL};--c`]) {
+    const error = await failure(run({ principal: analyst, sql, contextId }));
+    assert.equal(error.code, 'SQL_FORBIDDEN', sql);
+    assert.match(error.message, /";" is only accepted once/);
+  }
+  assert.equal(executor.calls.length, 1, 'rejected statements never reach the database');
+});
+
 test('pagination: the LLM repeats the call with next_offset until more=no', async () => {
   const { run, issue } = setup();
   const contextId = issue();

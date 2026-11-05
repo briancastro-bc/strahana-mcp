@@ -5,7 +5,8 @@ import { analyzeSql } from '../../../../src/hana/query/domain/sql-analyzer.js';
 import { SqlRejection } from '../../../../src/hana/query/domain/sql-rejection.js';
 import { NodeSqlParserAdapter } from '../../../../src/hana/query/infrastructure/node-sql-parser-adapter.js';
 
-// Corpus ported from the approved Phase 0 spike (synthetic names). It exercises stage 1 only
+// Corpus ported from the approved Phase 0 spike (synthetic names). The only change: a single
+// trailing semicolon moved from forbidden to allowed (approved after Phase 3). It exercises stage 1 only
 // (syntax and policy); resolution against the catalog is covered by sql-validator.test.ts.
 const load = (file: string): unknown =>
   JSON.parse(readFileSync(`test/fixtures/sql/${file}`, 'utf8'));
@@ -16,8 +17,8 @@ const gaps = load('hana-gaps.json') as { sql: string; gap: string }[];
 const parser = new NodeSqlParserAdapter();
 
 test('corpus sizes are the ones of the spike', () => {
-  assert.equal(allowed.length, 62);
-  assert.equal(forbidden.length, 102);
+  assert.equal(allowed.length, 63);
+  assert.equal(forbidden.length, 101);
   assert.equal(gaps.length, 8);
 });
 

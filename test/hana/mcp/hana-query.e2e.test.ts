@@ -142,6 +142,30 @@ test('hana_context -> hana_query over MCP HTTP: compact TSV, server paging, no s
   }
 });
 
+test('hana_query accepts one trailing semicolon and executes the stripped text with server paging', async () => {
+  const server = await boot();
+  try {
+    const client = await connectClient(server.url, {
+      authorization: `Bearer ${server.analyst.key}`,
+    });
+    const id = await contextId(client);
+    const result = await text(client, 'hana_query', {
+      sql: `${QUERY};\n`,
+      context_id: id,
+      limit: 3,
+    });
+    assert.equal(result.isError, false);
+    assert.equal(server.database.calls[0]?.sql, `${QUERY} LIMIT 4 OFFSET 0`);
+    const stacked = await text(client, 'hana_query', { sql: `${QUERY};;`, context_id: id });
+    assert.equal(stacked.isError, true);
+    assert.match(stacked.text, /^SQL_FORBIDDEN: Only one statement is allowed/);
+    assert.equal(server.database.calls.length, 1);
+    await client.close();
+  } finally {
+    await server.app.close();
+  }
+});
+
 test('pagination over MCP: repeat the call with next_offset until more=no', async () => {
   const server = await boot();
   try {

@@ -47,3 +47,29 @@ test('every validated statement stays well formed once the paging suffix is adde
     );
   }
 });
+
+test('an input with a trailing semicolon is paged as valid SQL: the semicolon never reaches the suffix', () => {
+  const parser = new NodeSqlParserAdapter();
+  for (const sql of [
+    'SELECT ID FROM COM_ACME_SALES_ORDERS;',
+    'SELECT ID FROM COM_ACME_SALES_ORDERS ORDER BY ID ;\n',
+  ]) {
+    const validated = validateSql({
+      sql,
+      parser,
+      catalog: catalogView,
+      contextEntities,
+      environment: 'E',
+    });
+    const paged = appendPaging(validated.sql, 11, 22);
+    assert.ok(!paged.includes(';'), paged);
+    assert.match(paged, / LIMIT 11 OFFSET 22$/);
+    const ast = parser.parse(paged) as { limit?: { value?: { value: number }[] } };
+    assert.ok(!Array.isArray(ast), paged);
+    assert.deepEqual(
+      ast.limit?.value?.map((v) => v.value),
+      [11, 22],
+      paged,
+    );
+  }
+});

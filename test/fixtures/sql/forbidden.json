@@ -4,10 +4,6 @@
     "label": "multiple statements"
   },
   {
-    "sql": "SELECT a FROM T;",
-    "label": "trailing semicolon"
-  },
-  {
     "sql": "SELECT a FROM T; DROP TABLE T",
     "label": "stacked drop"
   },

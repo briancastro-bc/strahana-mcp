@@ -1,6 +1,6 @@
 # 00 — Point of View: STRAHANA (MVP)
 
-> **Estado:** Aprobado para Fase 0 · **Alcance:** MVP · **Tipo de activo:** Servidor MCP desplegado en SAP BTP · **Funcionalidades futuras:** [`proposals/`](proposals/README.md)
+> **Estado:** MVP aprobado · Fases 0 (spike del parser), 1, 2 y 3 implementadas en código; **validación contra una base HANA real pendiente** (Fase 0 externa y prueba de integración con `STRAHANA_RO`) · **Alcance:** MVP · **Tipo de activo:** Servidor MCP desplegado en SAP BTP · **Funcionalidades futuras:** [`proposals/`](proposals/README.md)
 
 **STRAHANA** es un servidor MCP (Model Context Protocol) que permite a perfiles funcionales y técnicos consultar en **solo lectura** bases SAP HANA desde su propio asistente de IA, **sin conocer las credenciales de conexión** y con el **menor consumo de tokens** posible.
 
@@ -33,7 +33,7 @@ En el MVP, STRAHANA detecta en el catálogo YAML las tablas y los campos relevan
 
 **Tareas de la Fase 0 (técnicas, no bloquean la decisión):**
 
-- [ ] Spike del parser: el subconjunto de SQL de [§6](#6-validación-del-sql-paso-5) se parsea de forma confiable.
+- [x] Spike del parser (hecho y aprobado): el subconjunto de SQL de [§6](#6-validación-del-sql-paso-5) se parsea de forma confiable.
 - [ ] Usuario técnico de solo `SELECT` creado en HANA Cloud (rol `.hdbrole` del contenedor HDI piloto).
 - [ ] Instancia de HANA Cloud configurada para aceptar conexiones desde las IP de SAP BTP.
 - [ ] El cliente MCP aprobado admite encabezados HTTP personalizados (para la API key).
@@ -47,7 +47,7 @@ En el MVP, STRAHANA detecta en el catálogo YAML las tablas y los campos relevan
 | Base de datos del piloto | **SAP HANA Cloud propio**, contenedores HDI de proyectos CAP. |
 | Protocolo | MCP, Streamable HTTP (BTP) + stdio (desarrollo local). Servidor **sin estado**. |
 | Hosting | SAP BTP, **Cloud Foundry**, empaquetado como MTA. |
-| Runtime | Node.js ≥ 22 (LTS), TypeScript estricto, ESM, **npm**. |
+| Runtime | Node.js ≥ 22 (LTS), TypeScript estricto, ESM, **pnpm**. |
 | Arquitectura | Screaming + hexagonal **por bounded context**: `access`, `catalog`, `query`, sobre una `platform` compartida. |
 | Autenticación del piloto | **API key por usuario** (hash en un servicio *user-provided*) detrás del puerto `TokenVerifier`. |
 | Autenticación objetivo | **IAS**, diseñada a nivel conceptual en [§9.3](#93-diseño-conceptual-con-ias); se implementa en [P-017](proposals/P-017-autenticacion-ias.md) reemplazando solo el adaptador. |
@@ -205,9 +205,10 @@ Solo dos herramientas, ambas con `readOnlyHint: true`, descripciones de una lín
 |---------|----------------|
 | `environment` omitido | Si el usuario tiene un solo entorno, se usa ese. Si tiene varios, el error lista los disponibles en una línea. No hay entorno por defecto implícito (igual que `ssff-mcp`). |
 | `entities` | Revelación progresiva: devuelve **todos** los campos de esas tablas, en lugar de solo los más relevantes. |
-| `context_id` | Firmado con HMAC; contiene el entorno, la versión del catálogo, las tablas del contexto, el usuario y la expiración (60 min). Se puede reutilizar en preguntas de seguimiento sin volver a llamar a `hana_context`. |
-| `limit` | Filas a devolver (por defecto `pageSize`, máximo `maxRows` del entorno). Reemplaza a `LIMIT`/`TOP` en el SQL. |
+| `context_id` | Firmado con HMAC; contiene el entorno, la versión del catálogo, las tablas del contexto, el usuario y la expiración (**TTL fijo de 60 minutos**, no configurable por entorno). `hana_query` lo verifica **antes** de aplicar el rate limit. Se puede reutilizar en preguntas de seguimiento sin volver a llamar a `hana_context`. |
+| `limit` | Filas a devolver (por defecto `pageSize`, máximo `maxRows` del entorno). Reemplaza a `LIMIT`/`TOP` en el SQL. Si supera `maxRows`, `SQL_FORBIDDEN`. |
 | `offset` | Paginación: el LLM repite la llamada con el mismo `sql` y `context_id`, y el `offset` recibido en `next_offset`. |
+| `;` final | Se acepta **un solo** `;` al final del `sql` (seguido, como mucho, de espacios): el servidor lo quita antes de validar y ejecuta el texto sin él, con su `LIMIT`/`OFFSET` ([§6.2](#62-subconjunto-permitido)). |
 
 ### 4.2 Respuesta de `hana_context`
 
@@ -232,6 +233,8 @@ rules: SELECT only; list columns (no *); no LIMIT/TOP (use limit); prefer GROUP 
 | `b` | Boolean |
 | `PK` | Parte de la clave |
 
+Una tabla puede traer reglas propias del catálogo (campo opcional `rules`, [§5.2](#52-contenido)); se muestran como líneas `  rule: …` bajo la tabla, y solo cuando existen.
+
 ### 4.3 Respuesta de `hana_query`
 
 ```
@@ -250,8 +253,8 @@ notes: NAME truncated to 120 chars in 1 row
 | Textos de más de 120 caracteres se truncan con `…`. | Evita que un texto largo consuma la respuesta. |
 | Las columnas completamente vacías en la página se omiten y se informan en `notes`. | Ahorro de tokens sin perder información. |
 | **Sin conteo total** (`COUNT(*)`): solo `rows` y `more`. | Un conteo total duplica la carga en la base de datos; si hace falta, el LLM escribe un `COUNT`. |
-| `notes:` solo cuando el servidor aplicó algo. | Sin texto de relleno. |
-| Tope de bytes por respuesta (`maxResponseBytes`, por defecto 16 KiB). | Techo absoluto de tokens por llamada. |
+| `notes:` solo cuando el servidor aplicó o advierte algo (columnas omitidas, textos truncados, respuesta recortada por `maxResponseBytes`, o `no ORDER BY, page order is not guaranteed` al paginar una consulta sin `ORDER BY`). | Sin texto de relleno; el LLM sabe que el orden entre páginas no es estable. |
+| Tope de bytes por respuesta (`maxResponseBytes`, por defecto 16 KiB). Si una **sola fila** no cabe, se devuelve `SQL_FORBIDDEN` pidiendo seleccionar menos columnas o más cortas. | Techo absoluto de tokens por llamada; nunca una página vacía sin explicación. |
 | Sin `structuredContent` ni `outputSchema`. | La especificación pide duplicar el contenido estructurado como texto: se pagaría dos veces. |
 
 ### 4.4 Errores
@@ -275,6 +278,12 @@ Formato alineado con `ssff-mcp` (`SanitizedError { code, message }`): una línea
 | `SQL_FORBIDDEN` | `SELECT * is not allowed; list the columns.` |
 | `DB_TIMEOUT` | `Query exceeded 30s. Narrow the filters or aggregate.` |
 | `DB_ERROR` | Mensaje de HANA saneado, sin credenciales ni host. |
+| `INPUT_INVALID` | Entrada fuera del contrato que el esquema no cubre (pregunta demasiado larga, entidad desconocida en `entities`). |
+| `NOT_IMPLEMENTED` | `hana_query is not available yet (planned for phase 3).` Solo si una herramienta se registra sin su manejador; con ambas fases implementadas no ocurre. |
+| `CONFIG_INVALID` | `Invalid configuration: …` Error de arranque (no de una llamada): impide iniciar el servidor. |
+| `INTERNAL_ERROR` | `Internal error. Retry later or contact an administrator.` Cualquier fallo inesperado, sin detalles. |
+
+Los últimos cuatro son adiciones de la plataforma respecto de `ssff-mcp`. Además, los errores del **transporte HTTP** (antes de llegar a una herramienta) no usan estos códigos de herramienta: `/mcp` responde `401` con `AUTH_REQUIRED`, `405` con `BAD_METHOD` (`Use POST for /mcp.`) y `400`/`413` con `BAD_REQUEST` (`Invalid request body.`), en un cuerpo JSON `{ "error": { "code", "message" } }`.
 
 ---
 
@@ -309,6 +318,7 @@ entities:
       - { name: CURRENCY_CODE, type: string, length: 3, label: Moneda }
     joins:
       - { entity: COM_ACME_SALES_CUSTOMERS, on: { CUSTOMER_ID: ID } }
+    rules: ["STATUS_CODE: O=open, C=closed"]   # opcional, hasta 3 líneas de 120 caracteres
   - name: COM_ACME_SALES_CUSTOMERS
     label: Clientes
     synonyms: [clientes, compradores]
@@ -328,6 +338,7 @@ entities:
 | Las columnas sensibles (salarios, datos bancarios, datos personales) **no se incluyen**. | El usuario técnico puede leer todo lo que su rol permite; el catálogo acota lo que el LLM ve y usa. |
 | `label` breve (≤ 4 palabras); los `synonyms` sirven **solo para la búsqueda** y no se envían al LLM. | Ahorro de tokens. |
 | `joins` declarados explícitamente. | El LLM no adivina relaciones y el contexto es más corto. |
+| `rules` (opcional, por tabla): hasta 3 líneas de 120 caracteres con convenciones de datos que el LLM no puede deducir (por ejemplo, el significado de un código de estado). Se envían tal cual bajo la tabla. | Evita consultas semánticamente erróneas; es el único texto libre del catálogo que viaja al LLM, así que se mantiene corto y no sensible. |
 | `version` se incrementa en cada cambio. | Invalida los `context_id` emitidos con la versión anterior. |
 | Se valida contra el esquema al arrancar; un catálogo inválido impide iniciar. | Falla de forma cerrada. |
 | El rol `.hdbrole` del usuario técnico otorga `SELECT` **solo** sobre los objetos del catálogo. | Catálogo y permisos de la base de datos coinciden: doble barrera. |
@@ -351,7 +362,7 @@ No existe un parser del dialecto HANA en Node. La estrategia es:
 1. Definir un **subconjunto de SQL de lectura** que STRAHANA acepta.
 2. Parsearlo a AST con `node-sql-parser` usando la gramática **PostgreSQL** (identificadores con comillas dobles y `LIMIT`/`OFFSET`, compatibles con HANA).
 3. **Fallar de forma cerrada**: todo lo que no se parsea o no se reconoce se rechaza con un error accionable.
-4. Ejecutar **el texto original validado** (más `LIMIT`/`OFFSET` agregados por el servidor), nunca un SQL regenerado desde el AST, para evitar diferencias de dialecto.
+4. Ejecutar **el texto original validado** (sin su `;` final, si lo traía, y con `LIMIT`/`OFFSET` agregados por el servidor), nunca un SQL regenerado desde el AST, para evitar diferencias de dialecto.
 
 El spike de la Fase 0 confirma que el subconjunto se parsea de forma confiable. Si no es así, la alternativa es una gramática propia del subconjunto (por ejemplo, con un generador de parsers PEG).
 
@@ -359,14 +370,14 @@ El spike de la Fase 0 confirma que el subconjunto se parsea de forma confiable. 
 
 | Permitido | No permitido |
 |-----------|--------------|
-| Una sola sentencia `SELECT` | Múltiples sentencias, `;` intermedios |
+| Una sola sentencia `SELECT`, con **un solo `;` final** opcional (seguido, como mucho, de espacios o saltos de línea) | Múltiples sentencias, `;` intermedios, `;;` o cualquier texto después del `;` (incluidos comentarios) |
 | Columnas explícitas, alias | `SELECT *` |
-| `JOIN` (`INNER`, `LEFT`) hasta 4 tablas | `CROSS JOIN` sin condición, más de 4 tablas |
+| `JOIN` (`INNER`, `LEFT`) hasta 4 tablas base en **toda** la sentencia (subconsultas incluidas) | `CROSS JOIN` sin condición, más de 4 tablas |
 | `WHERE`, `GROUP BY`, `HAVING`, `ORDER BY` | `LIMIT`, `OFFSET`, `TOP` (los controla el servidor) |
 | Subconsultas en `WHERE` (`IN`, `EXISTS`) y en `FROM`, hasta 2 niveles | `WITH` (CTE), `UNION`, `INTERSECT`, `EXCEPT` |
 | Agregaciones: `COUNT`, `SUM`, `AVG`, `MIN`, `MAX`, `COUNT(DISTINCT …)` | Funciones de ventana |
-| Funciones de una lista blanca (texto, fecha, numéricas, `CAST`, `COALESCE`, `CASE`) | Procedimientos, funciones de tabla, `CALL` |
-| Nombres sin schema (el servidor fija el schema del entorno) | Nombres calificados con schema, objetos `SYS.*` o `_SYS_*` |
+| Funciones de una lista blanca **explícita** (texto, fecha, numéricas, nulos y conversión, incluidas `TO_VARCHAR` y `LOCATE`; ver `ALLOWED_FUNCTIONS` en `src/hana/query/domain/sql-policy.ts`), `CAST` a tipos soportados, `COALESCE`, `CASE` | Procedimientos, funciones de tabla, `CALL` |
+| Nombres sin schema (el servidor fija el schema del entorno); identificadores sin comillas (HANA los pliega a mayúsculas) o entre comillas dobles | Nombres calificados con schema, objetos `SYS.*` o `_SYS_*` |
 | Literales y operadores estándar | Comentarios (`--`, `/* */`), `INTO`, `FOR UPDATE` |
 
 ### 6.3 Reglas de validación
@@ -380,6 +391,15 @@ El spike de la Fase 0 confirma que el subconjunto se parsea de forma confiable. 
 | 5 | Cada campo existe en el catálogo de su tabla; los alias y los campos sin calificar se resuelven sin ambigüedad (**inferencia**). | `SQL_UNKNOWN_COLUMN` / `SQL_AMBIGUOUS_COLUMN` |
 | 6 | Solo funciones y operadores de la lista blanca. | `SQL_FORBIDDEN` |
 | 7 | Límites: `limit ≤ maxRows`, ≤ 4 tablas, ≤ 2 niveles de subconsulta, longitud del SQL. | `SQL_FORBIDDEN` |
+
+**Precisiones del MVP:**
+
+- **`;` final.** El validador (`checkSqlText`) quita un único `;` de nivel superior que solo tenga espacios después, antes de parsear. Un `;` dentro de un literal o de un identificador entre comillas es un carácter normal y nunca se quita. Se ejecuta el texto sin el `;` más ` LIMIT n OFFSET m`. Cualquier otro `;` produce `SQL_FORBIDDEN` (`Only one statement is allowed; ";" is only accepted once, at the very end.`); un `;` solo produce `SQL_PARSE` (SQL vacío).
+- **Tablas contadas globalmente.** El límite de 4 tablas cuenta las tablas base de **toda** la sentencia, incluidas las de subconsultas y las repetidas, no por `SELECT`.
+- **Mayúsculas y minúsculas.** Los identificadores sin comillas coinciden con el catálogo sin distinguir mayúsculas (se pliegan a mayúsculas, como en HANA); los que van entre comillas dobles deben coincidir exactamente con el nombre del catálogo.
+- **Funciones.** La lista blanca es explícita y cerrada (`ALLOWED_FUNCTIONS` y `ALLOWED_AGGREGATES` en `src/hana/query/domain/sql-policy.ts`); agregar una función es una decisión de seguridad. Incluye `TO_VARCHAR` y `LOCATE`, que el spike marcó como brechas de política.
+- **Limitaciones conocidas del parser** (no hay dialecto HANA; se rechazan con un mensaje que indica la alternativa): `CAST` a `NVARCHAR`, `SECONDDATE`, `DAYDATE`, `SMALLDECIMAL` y `NCLOB`; `SUBSTRING(x FROM … FOR …)` (usar `SUBSTRING(x, inicio, largo)`); y literales con exponente (`1.5E3`). Se documentan como limitaciones del MVP, no como errores.
+- **Orden y control previos.** `hana_query` verifica el `context_id` (regla 1) **antes** de aplicar el rate limit.
 
 Los errores de campo incluyen sugerencias por similitud (`fastest-levenshtein`), para que el LLM corrija en un solo intento sin volver a pedir contexto.
 
@@ -470,12 +490,13 @@ Los errores de campo incluyen sugerencias por similitud (`fastest-levenshtein`),
       "schema": "SALES_HDI_DB_1",
       "catalog": "catalog/sales.catalog.yaml",
       "groups": ["STRAHANA_DEV_SALES"],
-      "limits": { "pageSize": 50, "maxRows": 500, "timeoutSeconds": 30, "maxResponseBytes": 16384 }
+      "limits": { "pageSize": 50, "maxRows": 500, "timeoutSeconds": 30, "maxResponseBytes": 16384, "rateLimitPerMinute": 30, "poolSize": 4 }
     }
   }
 }
 ```
 
+- **Límites por entorno** (`limits`): `pageSize`, `maxRows`, `timeoutSeconds`, `maxResponseBytes`, y dos agregados durante la implementación: `rateLimitPerMinute` (llamadas por usuario por minuto, en memoria; 30 por defecto) y `poolSize` (conexiones máximas del pool del entorno, de 1 a 50; 4 por defecto).
 - **Multi-schema / multi-entorno:** un entorno por combinación de conexión × schema × catálogo.
 - `productive: true` marca entornos productivos: el modo stdio los rechaza y el MVP no los habilita ([P-010](proposals/P-010-proteccion-carga-productivo.md)).
 - `kind: "hana"` deja preparado el discriminador para la unificación con `ssff-mcp` ([P-015](proposals/P-015-unificacion-ssff-mcp.md)), cuya configuración también usa un mapa `environments`.
@@ -498,7 +519,7 @@ Todo adaptador de autenticación produce el mismo `Principal { userId, groups[] 
 | Formato | `stk_` + 32 bytes aleatorios en base64url. |
 | Almacenamiento | Solo el **hash SHA-256**, en el servicio *user-provided* `strahana-secrets`. La key en claro no se guarda en ningún lado. |
 | Verificación | Comparación en tiempo constante (`timingSafeEqual`) en cada llamada. |
-| Emisión | Script `npm run apikey:new -- --user jdoe --groups STRAHANA_DEV_SALES`: genera la key (se muestra **una sola vez**) y la entrada con el hash para pegar en el servicio. |
+| Emisión | Script `pnpm apikey:new -- --user jdoe --groups STRAHANA_DEV_SALES`: genera la key (se muestra **una sola vez**) y la entrada con el hash para pegar en el servicio. |
 | Distribución | Por un canal seguro; el usuario la configura en su cliente MCP como encabezado. **Nunca** en repositorios ni en chats. |
 | Rotación / revocación | Reemplazar o quitar la entrada en `strahana-secrets` y ejecutar `cf restage`. |
 | Auditoría | Cada llamada queda asociada al `user` de la key. |
@@ -545,7 +566,7 @@ En el MVP todo el consumo ocurre en el asistente del usuario, por eso cada byte 
 | Revelación progresiva | `+N cols` y el parámetro `entities` para pedir el detalle solo cuando hace falta. |
 | Sinónimos fuera de la respuesta | Se usan para buscar, no para el LLM. |
 | Reglas en una línea, dentro del contexto | Solo se pagan cuando se piden, no en cada turno. |
-| `context_id` reutilizable por 60 min | Las preguntas de seguimiento del mismo tema no vuelven a pedir contexto. |
+| `context_id` reutilizable por 60 min (TTL fijo) | Las preguntas de seguimiento del mismo tema no vuelven a pedir contexto. |
 | **Objetivo** | ≤ 800 tokens por contexto. |
 
 ### 10.3 SQL (tokens de salida del LLM)
@@ -563,6 +584,7 @@ En el MVP todo el consumo ocurre en el asistente del usuario, por eso cada byte 
 | TSV | El formato tabular más compacto. |
 | `pageSize` por defecto de 50 filas, `limit` configurable | El LLM pide solo lo necesario. |
 | Columnas vacías omitidas, textos largos truncados | Sin perder información útil. |
+| `notes:` solo cuando el servidor aplicó o advierte algo (incluido `no ORDER BY, page order is not guaranteed` al paginar) | Sin texto de relleno. |
 | Sin conteo total ni `structuredContent` | Sin costo duplicado. |
 | Recomendación de agregar (`GROUP BY`) incluida en las reglas | Un total por cliente cuesta menos que mil filas crudas. |
 | `maxResponseBytes` | Techo duro por llamada. |
@@ -648,7 +670,7 @@ Análisis de [`chiptime/ssff-mcp`](https://github.com/chiptime/ssff-mcp) (commit
 | Mapa `environments` en la configuración | Sí | **Igual**, con `kind: "hana"` |
 | Autenticación de clientes | API key hasheada planificada (`Bearer` / `X-API-Key`); IAS en su roadmap | **Igual**: API key en el piloto, IAS después |
 | Prefijo en herramientas | No (`query_entity`, …) | **`hana_*`**; proponer `sf_*` al unificar |
-| Gestor de paquetes | pnpm | **npm** (decisión del proyecto; fricción documentada) |
+| Gestor de paquetes | pnpm | **pnpm** (decisión del proyecto; fricción documentada) |
 | `zod` | 3.25 | **4** (el SDK acepta ambas; migrar `ssff-mcp` al unificar) |
 | Cursor | HMAC con secreto aleatorio por proceso | **Clave configurada** (R7) |
 | Arquitectura | Módulos planos | Screaming + hexagonal; `ssff-mcp` se envolvería como contexto `successfactors` |
@@ -657,10 +679,9 @@ Análisis de [`chiptime/ssff-mcp`](https://github.com/chiptime/ssff-mcp) (commit
 
 ## 13. Stack tecnológico
 
-Versiones verificadas en npm el 2026-10-20. Fijar versiones exactas al iniciar el proyecto.
-
 | Propósito | Librería | Versión | Por qué |
 |-----------|----------|---------|---------|
+
 | Servidor MCP | `@modelcontextprotocol/sdk` | 1.32.x | SDK oficial; stdio y Streamable HTTP. **Verificar la revisión de la especificación soportada.** |
 | HTTP | `express` | 5.x | Integración con el transporte HTTP del SDK, middleware de autenticación y `/health`. |
 | Credenciales | `@sap/xsenv` | 6.x | Lee `VCAP_SERVICES` y `default-env.json`, y filtra servicios por tag. Convención de CAP. |
@@ -682,6 +703,7 @@ Versiones verificadas en npm el 2026-10-20. Fijar versiones exactas al iniciar e
 
 | Recurso | Uso en el MVP |
 |---------|---------------|
+
 | Cloud Foundry (buildpack de Node.js) | **Una instancia** (el rate limit es en memoria; para escalar, ver [P-007](proposals/P-007-escalamiento-horizontal.md)). |
 | Servicios *user-provided* | Uno por conexión de HANA Cloud y uno de secretos (`strahana-secrets`: clave de firma y hashes de API keys). |
 | SAP HANA Cloud | Instancia propia con "Allowed connections" restringidas a las IP de SAP BTP (R5). |
@@ -738,7 +760,7 @@ Versiones verificadas en npm el 2026-10-20. Fijar versiones exactas al iniciar e
 - [ ] ¿Quién administra la instancia de HANA Cloud y crea `STRAHANA_RO`?
 - [ ] ¿Qué cliente o clientes MCP aprueba la empresa para usar con datos?
 - [ ] ¿Quién emite y distribuye las API keys del piloto?
-- [ ] Para la unificación futura con `ssff-mcp`: ¿npm o pnpm?
+- [x] Para la unificación futura con `ssff-mcp`: ¿npm o pnpm? **Resuelto: pnpm** (decisión del proyecto; igual que `ssff-mcp`).
 
 ---
 

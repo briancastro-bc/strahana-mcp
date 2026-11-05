@@ -180,7 +180,7 @@ Se parsea con `node-sql-parser` (gramática PostgreSQL), se recorre el AST con u
 
 | Permitido | Rechazado |
 | --- | --- |
-| Un solo `SELECT` sin `;` final | Varias sentencias, `;`, comentarios (`--`, `/* */`), `\`, comillas invertidas, `#`, caracteres no ASCII fuera de comillas |
+| Un solo `SELECT`, con un único `;` final opcional (se quita antes de validar) | Varias sentencias, `;` intermedios o repetidos (`;;`), cualquier texto tras el `;`, comentarios (`--`, `/* */`), `\`, comillas invertidas, `#`, caracteres no ASCII fuera de comillas |
 | Columnas explícitas y alias | `SELECT *`, `t.*` |
 | `INNER JOIN`, `JOIN`, `LEFT JOIN` con `ON`, hasta 4 tablas en total | `CROSS`/`RIGHT`/`FULL`/`NATURAL JOIN`, `USING`, joins con coma, más de 4 tablas |
 | `WHERE`, `GROUP BY`, `HAVING`, `ORDER BY` | `LIMIT`, `OFFSET`, `TOP`, `FETCH`, `NULLS FIRST/LAST`, `ROLLUP`, `GROUPING SETS` |
@@ -190,7 +190,7 @@ Se parsea con `node-sql-parser` (gramática PostgreSQL), se recorre el AST con u
 | Funciones de la lista blanca (`src/hana/query/domain/sql-policy.ts`): texto (`UPPER`, `LOWER`, `LENGTH`, `TRIM`, `SUBSTRING`, `CONCAT`, `REPLACE`, `LEFT`, `RIGHT`, `LPAD`, `RPAD`, `LOCATE`, `INSTR`), numéricas (`ROUND`, `FLOOR`, `CEIL`, `ABS`, `MOD`, `SIGN`, `POWER`, `SQRT`), nulos (`NULLIF`, `IFNULL`), fechas (`ADD_DAYS`, `ADD_MONTHS`, `ADD_YEARS`, `ADD_SECONDS`, `DAYS_BETWEEN`, `SECONDS_BETWEEN`, `MONTHS_BETWEEN`, `YEAR`, `MONTH`, `DAYOFMONTH`, `WEEK`, `HOUR`, `MINUTE`, `SECOND`, `DAYNAME`, `MONTHNAME`, `LAST_DAY`, `CURRENT_DATE`, `CURRENT_TIMESTAMP`, `CURRENT_UTCDATE`, `CURRENT_UTCTIMESTAMP`) y conversión (`TO_DATE`, `TO_TIMESTAMP`, `TO_VARCHAR`, `TO_NVARCHAR`, `TO_INTEGER`, `TO_BIGINT`, `TO_DECIMAL`, `TO_DOUBLE`) | Cualquier otra función, incluidas las calificadas con schema, `SESSION_CONTEXT`, `CURRENT_USER`, procedimientos y funciones de tabla |
 | Nombres sin schema; identificadores sin comillas (se pliegan a mayúsculas) o entre comillas dobles en mayúsculas | Nombres con schema, objetos `SYS`/`SYS_*`/`_SYS_*`, identificadores entre comillas con minúsculas (son otro objeto en HANA) |
 
-Además, cada tabla debe estar en el `context_id` (si está en el catálogo pero no en el contexto, el error indica `hana_context` con `entities:[…]`) y cada columna en el catálogo; los alias y las columnas sin calificar se resuelven sin ambigüedad. Un `;` final se rechaza con un mensaje que pide quitarlo (el SQL se ejecuta tal cual se recibe).
+Además, cada tabla debe estar en el `context_id` (si está en el catálogo pero no en el contexto, el error indica `hana_context` con `entities:[…]`) y cada columna en el catálogo; los alias y las columnas sin calificar se resuelven sin ambigüedad. Un único `;` final (con espacios o saltos de línea después) se acepta y se quita antes de validar: se ejecuta el texto sin él más `LIMIT n OFFSET m`. Un `;` dentro de un literal entre comillas es un carácter normal. Cualquier otro `;` se rechaza con `SQL_FORBIDDEN`.
 
 **Limitaciones conocidas** (el parser no tiene dialecto HANA; se rechazan con un mensaje que indica la alternativa): `CAST` a `NVARCHAR`, `SECONDDATE`, `DAYDATE`, `SMALLDECIMAL` y `NCLOB` (usa `VARCHAR`, `TIMESTAMP`, `DATE`, `DECIMAL(p,s)`), `SUBSTRING(x FROM … FOR …)` (usa `SUBSTRING(x, inicio, largo)`) y literales con exponente (`1.5E3`). Las pruebas del validador fijan este comportamiento (`test/fixtures/sql/hana-gaps.json`).
 

@@ -3,7 +3,7 @@ import { resolveReferences, type CatalogView } from './reference-resolver.js';
 import type { SqlParser } from './sql-parser.js';
 
 export interface ValidationInput {
-  /** The statement exactly as the LLM sent it. It is the text that gets executed. */
+  /** The statement as the LLM sent it. Its single trailing `;`, if any, is stripped before validation. */
   readonly sql: string;
   readonly parser: SqlParser;
   readonly catalog: CatalogView;
@@ -13,7 +13,10 @@ export interface ValidationInput {
 }
 
 export interface ValidatedSql {
-  /** The original text, unchanged: the executor appends LIMIT/OFFSET to this exact string. */
+  /**
+   * The original text without its single trailing `;` (otherwise unchanged): the executor
+   * appends LIMIT/OFFSET to this exact string.
+   */
   readonly sql: string;
   /** Physical entities used by the statement. */
   readonly tables: readonly string[];
@@ -33,5 +36,5 @@ export function validateSql(input: ValidationInput): ValidatedSql {
     contextEntities: input.contextEntities,
     environment: input.environment,
   });
-  return { sql: input.sql, tables, hasOrderBy: analysis.hasOrderBy };
+  return { sql: analysis.statement, tables, hasOrderBy: analysis.hasOrderBy };
 }

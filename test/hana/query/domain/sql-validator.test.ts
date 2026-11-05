@@ -65,6 +65,42 @@ test('hasOrderBy reflects the top-level SELECT only', () => {
   assert.equal(validate(`SELECT x.ID FROM (SELECT ID FROM ${O} ORDER BY ID) x`).hasOrderBy, false);
 });
 
+test('a single trailing semicolon (and trailing whitespace) is stripped before validation', async (t) => {
+  const base = `SELECT ID FROM ${O}`;
+  const cases: [string, string][] = [
+    [`${base};`, base],
+    [`${base};\n`, base],
+    [`${base} ;  \t\r\n`, base],
+    [`${base}\n;`, base],
+    [`${base} ORDER BY ID;`, `${base} ORDER BY ID`],
+    [`${base} WHERE NOTES = 'a;b';`, `${base} WHERE NOTES = 'a;b'`],
+    [`${base} WHERE NOTES = 'a;';`, `${base} WHERE NOTES = 'a;'`],
+    [`${base} WHERE NOTES = 'x'';';`, `${base} WHERE NOTES = 'x'';'`],
+    [`${base} WHERE "ID" = 'a;'`, `${base} WHERE "ID" = 'a;'`],
+  ];
+  for (const [sql, expected] of cases) {
+    await t.test(JSON.stringify(sql), () => {
+      const result = validate(sql);
+      assert.equal(result.sql, expected);
+      assert.deepEqual(result.tables, [O]);
+    });
+  }
+});
+
+test('a semicolon inside a literal at the very end is never stripped', () => {
+  const sql = `SELECT ID FROM ${O} WHERE NOTES = 'a;'`;
+  assert.equal(validate(sql).sql, sql);
+});
+
+test('multi-statement errors say the semicolon is only accepted once at the end', () => {
+  for (const sql of [`SELECT ID FROM ${O};;`, `SELECT ID FROM ${O}; SELECT ID FROM ${C}`]) {
+    assert.match(
+      rejection(sql).message,
+      /Only one statement is allowed; ";" is only accepted once/,
+    );
+  }
+});
+
 interface Negative {
   label: string;
   sql: string;
@@ -100,7 +136,37 @@ const NEGATIVE: readonly Negative[] = [
     sql: `SELECT ID FROM ${O}; SELECT ID FROM ${C}`,
     code: 'SQL_FORBIDDEN',
   },
-  { label: 'trailing semicolon', sql: `SELECT ID FROM ${O};`, code: 'SQL_FORBIDDEN' },
+  { label: 'double semicolon', sql: `SELECT ID FROM ${O};;`, code: 'SQL_FORBIDDEN' },
+  { label: 'semicolons separated by space', sql: `SELECT ID FROM ${O}; ;`, code: 'SQL_FORBIDDEN' },
+  { label: 'space before double semicolon', sql: `SELECT ID FROM ${O} ;;`, code: 'SQL_FORBIDDEN' },
+  {
+    label: 'semicolon followed by line comment',
+    sql: `SELECT ID FROM ${O};--c`,
+    code: 'SQL_FORBIDDEN',
+  },
+  {
+    label: 'semicolon followed by block comment',
+    sql: `SELECT ID FROM ${O}; /*x*/`,
+    code: 'SQL_FORBIDDEN',
+  },
+  { label: 'semicolon alone', sql: ';', code: 'SQL_PARSE' },
+  { label: 'semicolon after whitespace only', sql: '  ;\n', code: 'SQL_PARSE' },
+  { label: 'semicolon mid-statement', sql: `SELECT ID; FROM ${O}`, code: 'SQL_FORBIDDEN' },
+  {
+    label: 'semicolon then non-breaking space then text',
+    sql: `SELECT ID FROM ${O};${NBSP}`,
+    code: 'SQL_FORBIDDEN',
+  },
+  {
+    label: 'semicolon then control char',
+    sql: `SELECT ID FROM ${O};\u0000`,
+    code: 'SQL_FORBIDDEN',
+  },
+  {
+    label: 'semicolon after an unterminated literal',
+    sql: `SELECT ID FROM ${O} WHERE NOTES = 'a;`,
+    code: 'SQL_PARSE',
+  },
   { label: 'line comment', sql: `SELECT ID FROM ${O} -- hi`, code: 'SQL_FORBIDDEN' },
   {
     label: 'line comment hides tail',

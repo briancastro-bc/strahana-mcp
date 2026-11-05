@@ -65,6 +65,8 @@ export interface SqlAnalysis {
   /** The top-level SELECT has an ORDER BY. */
   readonly hasOrderBy: boolean;
   readonly quotedIdentifiers: ReadonlySet<string>;
+  /** The text to execute: the input without its single trailing `;`, otherwise unchanged. */
+  readonly statement: string;
 }
 
 type Node = Readonly<Record<string, unknown>>;
@@ -570,12 +572,12 @@ class Walker {
  * parser or the walker does not recognize is rejected (fail closed), including internal errors.
  */
 export function analyzeSql(sql: string, parser: SqlParser): SqlAnalysis {
-  const { quotedIdentifiers } = checkSqlText(sql);
+  const { statement, quotedIdentifiers } = checkSqlText(sql);
   let ast: unknown;
   try {
-    ast = parser.parse(sql);
+    ast = parser.parse(statement);
   } catch (error) {
-    throw parseFailure(sql, error);
+    throw parseFailure(statement, error);
   }
   if (Array.isArray(ast)) {
     if (ast.length !== 1) throw reject.forbidden('Only one statement is allowed.');
@@ -596,6 +598,7 @@ export function analyzeSql(sql: string, parser: SqlParser): SqlAnalysis {
     tables: ctx.tables,
     hasOrderBy: ctx.topHasOrderBy,
     quotedIdentifiers,
+    statement,
   };
 }
 

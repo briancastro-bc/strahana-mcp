@@ -81,7 +81,7 @@ Cada bounded context tiene `domain/` (puro, sin I/O), `application/` (casos de u
 
 - La garantía final es el usuario **`STRAHANA_RO`** con un `.hdbrole` de solo `SELECT` sobre los objetos del catálogo. **Nunca** usar el usuario de runtime del contenedor HDI (tiene permisos de escritura).
 - Todo SQL pasa por el validador antes de ejecutarse. **Falla cerrada:** lo que no se parsea o no se reconoce, se rechaza.
-- Solo el subconjunto de POV §6.2: un único `SELECT`; sin `*`, `LIMIT`/`TOP`/`OFFSET`, CTE, `UNION`, funciones de ventana, comentarios, schemas explícitos ni objetos `SYS`.
+- Solo el subconjunto de POV §6.2: un único `SELECT`; sin `*`, `LIMIT`/`TOP`/`OFFSET`, CTE, `UNION`, funciones de ventana, comentarios, schemas explícitos ni objetos `SYS`. Se admite un único `;` final (se quita antes de validar); cualquier otro `;` se rechaza.
 - Se ejecuta **el texto original validado** más `LIMIT`/`OFFSET` generados por el servidor. Nunca SQL regenerado desde el AST.
 - Cada tabla del SQL debe estar en el `context_id`; cada campo, en el catálogo.
 - `context_id` firmado con HMAC usando la clave configurada (nunca aleatoria por proceso), ligado a usuario, entorno, versión del catálogo y expiración.
@@ -104,7 +104,7 @@ Cada bounded context tiene `domain/` (puro, sin I/O), `application/` (casos de u
 
 - Descripciones de herramientas de una línea, en inglés; orden determinista; dos definiciones ≤ 300 tokens.
 - Contexto: top-k ≤ 5 tablas, ≤ 12 campos por tabla, formato compacto de POV §4.2; los sinónimos nunca van en la respuesta.
-- Resultados en TSV; sin conteo total, sin `structuredContent` ni `outputSchema`; `notes:` solo si el servidor aplicó algo; respetar `maxResponseBytes`.
+- Resultados en TSV; sin conteo total, sin `structuredContent` ni `outputSchema`; `notes:` solo si el servidor aplicó o advierte algo (incluido el aviso de paginar sin `ORDER BY`); respetar `maxResponseBytes`.
 - Errores en una línea, con la causa y la corrección (y una sugerencia de campo cuando aplica).
 - Todo cambio en descripciones, formato del contexto o de los resultados debe mantener verdes las **pruebas de presupuesto de tokens**.
 

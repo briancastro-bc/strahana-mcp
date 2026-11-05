@@ -216,12 +216,18 @@ function code(sql: string): string {
  * Independent oracle: a statement the validator accepted must not contain any construct the
  * policy forbids. It looks at the raw text, not at the parser, so it cannot share its blind spots.
  */
-function assertSafe(sql: string): void {
-  const text = code(sql).replace(/\bEXTRACT\s*\(\s*\w+\s+FROM\b/gi, 'EXTRACT(X,');
+function assertSafe(sql: string, executed: string): void {
+  // The only separator tolerated is ONE final top-level `;` (plus whitespace). An accepted
+  // statement has balanced quotes, so a `;` followed only by whitespace until the end is
+  // top-level. It must be gone from the executed text, which must otherwise equal the input.
+  const trailing = /;[ \t\n\r]*$/.exec(sql);
+  const expected = trailing === null ? sql : sql.slice(0, trailing.index).trimEnd();
+  assert.equal(executed, expected, `executed text is not the input minus its final ;: ${sql}`);
+  const text = code(executed).replace(/\bEXTRACT\s*\(\s*\w+\s+FROM\b/gi, 'EXTRACT(X,');
   assert.match(text, /^\s*SELECT\b/i, `not a SELECT: ${sql}`);
   assert.doesNotMatch(text, /;|--|\/\*|\\|`|#|::/, `separator or comment accepted: ${sql}`);
   assert.doesNotMatch(
-    sql.replace(/'(?:[^']|'')*'/g, "''"),
+    executed.replace(/'(?:[^']|'')*'/g, "''"),
     /[^\x20-\x7e\t\n\r]/,
     `non-ASCII code accepted: ${sql}`,
   );
@@ -267,8 +273,7 @@ test(`fuzz: ${FUZZ_ITERATIONS} seeded mutants never get a forbidden construct ac
         contextEntities,
         environment: 'E',
       });
-      assert.equal(result.sql, sql);
-      assertSafe(sql);
+      assertSafe(sql, result.sql);
       accepted++;
     } catch (error) {
       if (!(error instanceof SqlRejection)) throw error;
