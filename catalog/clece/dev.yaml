@@ -1,0 +1,21 @@
+domain: clece-dev
+version: 1
+label: Clece Dev Catalog
+entities:
+  - name: SSFFONHANA_CANDIDATE
+    label: Candidatos de empleo
+    synonyms: [candidato, candidatos, candidato de empleo, candidatos de empleo, candidates]
+    columns:
+      - { name: ID, type: string, length: 36, key: true, label: ID }
+      - { name: candidateId, type: string, length: 36, label: ID del candidato }
+      - { name: cust_dni, type: string, length: 20, label: DNI del candidato }
+      - { name: firstName, type: string, length: 100, label: Nombre del candidato }
+      - { name: lastName, type: string, length: 100, label: Apellidos del candidato }
+  - name: DB_JOBREQUISITION
+    label: Requisiciones de empleo
+    synonyms: [requisición, requisiciones, requisición de empleo, requisiciones de empleo, job requisition, job requisitions]
+    columns:
+      - { name: ID, type: string, length: 36, key: true, label: ID }
+      - { name: jobRequisitionId, type: string, length: 36, label: ID de la requisición }
+      - { name: title, type: string, length: 200, label: Título de la requisición }
+      - { name: status, type: string, length: 50, label: Estado de la requisición }

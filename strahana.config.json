@@ -1,18 +1,18 @@
 {
   "environments": {
-    "DEV-SALES": {
+    "CLECE-DEV": {
       "kind": "hana",
-      "label": "HANA Cloud DEV · Sales",
+      "label": "Clece Cloud DEV",
       "productive": false,
-      "service": "strahana-dev-sales",
-      "schema": "SALES_HDI_DB_1",
-      "catalog": "catalog/sales.catalog.yaml",
-      "groups": ["STRAHANA_DEV_SALES"],
+      "service": "clece-dev",
+      "schema": "A3EE759A0C724532B7AA4B858696BF4A",
+      "catalog": "catalog/clece/dev.yaml",
+      "groups": ["CLECE_DEV"],
       "limits": {
-        "pageSize": 50,
-        "maxRows": 500,
+        "pageSize": 100,
+        "maxRows": 1000,
         "timeoutSeconds": 30,
-        "maxResponseBytes": 16384,
+        "maxResponseBytes": 32768,
         "rateLimitPerMinute": 30,
         "poolSize": 4
       }
